@@ -1,0 +1,31 @@
+{
+  "name": "moiki-exporter",
+  "version": "0.0.1",
+  "description": "A tool to export your stories made with Moiki to other formats",
+  "author": "kaelhem",
+  "license": "MIT",
+  "source": "src/index.js",
+  "main": "dist/moiki-exporter.js",
+  "umd:main": "dist/moiki-exporter.umd.js",
+  "unpkg": "dist/moiki-exporter.umd.js",
+  "module": "dist/moiki-exporter.m.js",
+  "scripts": {
+    "build": "rimraf dist && microbundle --external all",
+    "dev": "microbundle watch"
+  },
+  "devDependencies": {
+    "microbundle": "^0.12.0",
+    "rimraf": "^3.0.0"
+  },
+  "dependencies": {
+    "lodash.kebabcase": "^4.1.1",
+    "uuid": "^7.0.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kaelhem/moiki-exporter.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kaelhem/moiki-exporter/issues"
+  }
+}
