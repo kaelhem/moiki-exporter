@@ -1,4 +1,4 @@
-![](https://raw.githubusercontent.com/kaelhem/katpat/moiki-exporter/website/public/android-chrome-512x512.png)
+![](https://raw.githubusercontent.com/kaelhem/moiki-exporter/website/public/android-chrome-512x512.png)
 
 # moiki-exporter
 This repository provides tools to export your stories made with Moiki to other formats
