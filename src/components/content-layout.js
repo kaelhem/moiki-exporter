@@ -1,11 +1,11 @@
 import React from 'react'
 import withSizes from 'react-sizes'
-import { HEADER_HEIGHT } from '../constants'
+import { HEADER_HEIGHT, FOOTER_HEIGHT } from '../constants'
 
 const ContentLayout = ({ width, height, render }) => {
   const sizes = {
     width,
-    height: height - HEADER_HEIGHT
+    height: height - HEADER_HEIGHT - FOOTER_HEIGHT
   }
   return (
     <div className="content">

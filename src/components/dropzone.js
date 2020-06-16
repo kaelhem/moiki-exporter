@@ -1,7 +1,7 @@
 import React, { useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
 
-const Dropzone = ({ onDataLoaded }) => {
+const Dropzone = ({ onDataLoaded, content }) => {
   const onDrop = useCallback(acceptedFiles => {
     const reader = new FileReader()
     reader.onabort = () => console.log('file reading was aborted')
@@ -16,7 +16,7 @@ const Dropzone = ({ onDataLoaded }) => {
   return (
     <div className='dropzone' style={ isDragActive ? { background: '#99ddbb' } : {}} { ...getRootProps() }>
       <input { ...getInputProps() } />
-      <p>Drop .json file here</p>
+      { content }
       <p style={{ fontSize: '.7em', marginTop: 0 }}>(or click to browse)</p>
     </div>
   )
