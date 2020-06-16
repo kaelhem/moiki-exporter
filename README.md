@@ -19,4 +19,4 @@ Contributions in any form are welcome! If you find a bug, please [file an issue.
 
 ## License
 
-This project is licensed under the MIT license. See the [LICENSE file](./LICENSE.md) for more details.
+This project is licensed under the MIT license. See the [LICENSE file](./LICENSE) for more details.
