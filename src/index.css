@@ -10,6 +10,15 @@ code {
     monospace;
 }
 
+a {
+  color: #0aa855 !important;
+  font-weight: bold;
+}
+
+a:hover {
+  color: #246b43 !important;
+}
+
 .app {
   display: flex;
   flex-direction: column;
@@ -49,17 +58,36 @@ code {
   display: flex;
   justify-content: center;
   flex-direction: column;
+  text-align: center;
+}
+
+.export-buttons .image > img {
+  height: 160px;
+}
+
+.export-buttons .image > .cover {
+  display: block;
+  height: 160px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+}
+
+.export-buttons h2 {
+  margin: 0.2em 0 0 0;
+  width: 300px;
 }
 
 .export-buttons .ui.button {
   margin-bottom: 5px;
+  margin-right: 0;
 }
 
 .dropzone {
   border: 2px #06a955 solid;
   border-radius: 1em;
   color: #06a955;
-  margin: 3em;
+  margin: 3em auto;
   padding: 1em;
   font-size: 1.5em;
   width: 200px;
@@ -70,4 +98,8 @@ code {
   justify-content: center;
   outline: none;
   text-align: center;
+}
+
+.fork-me-on-github {
+  top: 40px !important;
 }

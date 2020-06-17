@@ -6,17 +6,20 @@ import ContentLayout from './components/content-layout'
 import Dropzone from './components/dropzone'
 import kebabCase from 'lodash.kebabcase'
 import { saveAs } from 'file-saver'
-import { Button, Segment, Divider } from 'semantic-ui-react'
+import JSZip from 'jszip'
+import { Button, Segment, Divider, Image } from 'semantic-ui-react'
 import { version, convertToInk, convertToTwee } from 'moiki-exporter'
 
 const App = () => {
   const [story, setStory] = useState(null)
   const [error, setError] = useState(null)
 
-  const importStory = (data) => {
+  const importStory = async (data) => {
     setError(null)
     try {
-      setStory(JSON.parse(data))
+      const zip = await JSZip.loadAsync(data)
+      const fileContent = await zip.file('story.json').async('string')
+      setStory(JSON.parse(fileContent))
     } catch (e) {
       setError({
         message: 'This file is not in the correct format!',
@@ -25,16 +28,27 @@ const App = () => {
     }
   }
 
+  const getAuthor = () => {
+    if (story && story.meta && story.meta.author) {
+      const { firstname, lastname, pseudo } = story.meta.author
+      return pseudo ? pseudo : firstname + ' ' + lastname
+    }
+    return null
+  }
+
   const clear = () => {
     setError(null)
     setStory(null)
   }
 
-  const exportStory = (converter, ext) => {
+  const exportStory = async (converter, ext) => {
     setError(null)
     try {
-      const blob = new Blob([converter(story)])
-      saveAs(blob, kebabCase(story.meta.name) + '.' + ext)
+      const filename = kebabCase(story.meta.name)
+      const zip = new JSZip()
+      zip.file(filename + '.' + ext, converter(story))
+      const blob = await zip.generateAsync({type: 'blob'})
+      saveAs(blob, filename + '.zip')
     } catch (e) {
       setError({ message: 'Oops, there is a bug :-(' })
     }
@@ -67,23 +81,43 @@ const App = () => {
           )}
           <div style={{ width, display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
             { story ? (
-              <div className="export-buttons">
-                <Button onClick={inkExport}>Export to Inkle's ink</Button>
-                <Button onClick={tweeHarloweExport}>Export to Twee (<em>Harlowe 3.1.0</em>)</Button>
-                <Divider />
-                <Button onClick={clear}>Import another story</Button>
-              </div>
+              <Fragment>
+                <div className="export-buttons">
+                  <Segment>
+                    { story.meta.image && (
+                      <Image style={{maxHeight: 225, overflow: 'hidden'}} wrapped ui={false}>
+                        <div className='cover' style={{ backgroundImage: 'url(' + story.meta.image + ')' }} />
+                      </Image>
+                    )}
+                    <h2>{story.meta.name}</h2>
+                    <div><em>A story by {getAuthor() || 'Unknown user'}</em></div>
+                  </Segment>
+                  <Button onClick={inkExport}>Export to Inkle's ink</Button>
+                  <Button onClick={tweeHarloweExport}>Export to Twee (<em>Harlowe 3.1.0</em>)</Button>
+                  <Divider />
+                  <Button onClick={clear}>Import another story</Button>
+                </div>
+              </Fragment>
             ) : (
-              <Dropzone
-                onDataLoaded={ importStory }
-                content={<p>Drop your story as .json here</p>}
-              />
+              <div style={{ textAlign: 'center' }}> 
+                <p>This tool allow you to export stories made with <a href="https://moiki.fr" target="_blank" rel="noopener noreferrer">Moiki</a> in different formats.</p>
+                <a href="https://github.com/kaelhem/moiki-exporter" target="_blank" rel="noopener noreferrer"><em>Learn more about it</em></a>
+                <Divider />
+                <Dropzone
+                  onDataLoaded={ importStory }
+                  content={<p>Drop your story as <em>.zip</em> here</p>}
+                />
+              </div>
             )}
           </div>
         </Fragment>
       )} />
       <Footer {...{version}} />
-      <ForkMeOnGithub repo="https://github.com/kaelhem/moiki-exporter" />
+      <ForkMeOnGithub
+        colorBackground="#246b44"
+        text="View source on GitHub"
+        repo="https://github.com/kaelhem/moiki-exporter"
+      />
     </div>
   )
 }

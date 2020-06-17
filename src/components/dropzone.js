@@ -9,7 +9,7 @@ const Dropzone = ({ onDataLoaded, content }) => {
     reader.onload = ({target}) => {
       onDataLoaded(target.result)
     }
-    acceptedFiles.forEach(file => reader.readAsText(file))
+    acceptedFiles.forEach(file => reader.readAsArrayBuffer(file))
   }, [onDataLoaded])
   const {getRootProps, getInputProps, isDragActive} = useDropzone({ onDrop })
 
