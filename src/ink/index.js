@@ -35,7 +35,7 @@ export const convertToInk = (story) => {
   let variables = {}
   for (let asset of assets) {
     variables[asset.id] = {
-      inkVar: kebabCase(asset.label).replace('-', '_'),
+      inkVar: convertId(kebabCase(asset.label)),
       ...asset
     }
   }

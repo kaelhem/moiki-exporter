@@ -58,7 +58,7 @@ export const convertToHarlowe = (story) => {
   let variables = {}
   for (let asset of assets) {
     variables[asset.id] = {
-      tweeVar: '$'+kebabCase(asset.label).replace('-', '_'),
+      tweeVar: '$' + convertId(kebabCase(asset.label)),
       ...asset
     }
   }
