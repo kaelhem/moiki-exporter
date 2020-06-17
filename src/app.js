@@ -69,12 +69,12 @@ const App = () => {
       <ContentLayout render={({width, height}) => (
         <Fragment>
           { error && (
-            <Segment style={{ position: 'absolute', bottom: 10, width: 500, textAlign: 'center' }} color='red'>
+            <Segment style={{ position: 'absolute', top: 70, width: 500, textAlign: 'center' }} color='red'>
               { error.message }
               { error.kind !== 'normal' && (
                 <Fragment>
                   <Divider />
-                  <p>Please, consider adding an <a href="https://github.com/kaelhem/moiki-exporter/issues" target="_blank" rel="noopener noreferrer">issue on github</a> to help us improve this tool</p>
+                  <p>Please, consider opening an <a href="https://github.com/kaelhem/moiki-exporter/issues" target="_blank" rel="noopener noreferrer">issue on github</a> to help us improve this tool.</p>
                 </Fragment>
               )}
             </Segment>
@@ -97,6 +97,10 @@ const App = () => {
                   <Divider />
                   <Button onClick={clear}>Import another story</Button>
                 </div>
+                <div className="zip-warning">When you request one of these exports, a <em>.zip</em> file is generated and downloaded. With some browsers, you may receive an alert
+                  stating "this file may be dangerous". Indeed, file extensions (.ink, .twee ...) are not often used on the Web. If you doubt our good
+                  faith, but really want these exports, you can create and launch the webapp yourself by <a href="https://github.com/kaelhem/moiki-exporter/blob/website/README.md" target="_blank" rel="noopener noreferrer">following the instructions</a> of the github
+                  project. There is nothing we can do to resolve this problem.</div>
               </Fragment>
             ) : (
               <div style={{ textAlign: 'center' }}> 
