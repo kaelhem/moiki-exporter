@@ -104,7 +104,7 @@ const App = () => {
               </Fragment>
             ) : (
               <div style={{ textAlign: 'center' }}> 
-                <p>This tool allow you to export stories made with <a href="https://moiki.fr" target="_blank" rel="noopener noreferrer">Moiki</a> in different formats.</p>
+                <p>This tool allows you to export stories made with <a href="https://moiki.fr" target="_blank" rel="noopener noreferrer">Moiki</a> in different formats.</p>
                 <a href="https://github.com/kaelhem/moiki-exporter" target="_blank" rel="noopener noreferrer"><em>Learn more about it</em></a>
                 <Divider />
                 <Dropzone
