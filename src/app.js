@@ -74,7 +74,7 @@ const App = () => {
       <ContentLayout render={({width, height}) => (
         <Fragment>
           { error && (
-            <Segment style={{ position: 'absolute', top: 70, width: 500, textAlign: 'center' }} color='red'>
+            <Segment className="error-message" color='red'>
               { error.message }
               { error.kind !== 'normal' && (
                 <Fragment>

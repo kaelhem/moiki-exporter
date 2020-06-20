@@ -115,3 +115,14 @@ a:hover {
   left: 0;
   right: 0;
 }
+
+.ui.red.segment.error-message {
+  position: absolute;
+  top: 70px;
+  width: 500px;
+  text-align: center;
+  left: 0;
+  right: 0;
+  margin: auto;
+  z-index: 100;
+}
