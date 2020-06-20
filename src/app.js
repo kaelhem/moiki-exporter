@@ -8,7 +8,7 @@ import kebabCase from 'lodash.kebabcase'
 import { saveAs } from 'file-saver'
 import JSZip from 'jszip'
 import { Button, Segment, Divider, Image } from 'semantic-ui-react'
-import { version, convertToInk, convertToTwee } from 'moiki-exporter'
+import { version, convertToInk, convertToTwee, convertToJdrBot } from 'moiki-exporter'
 
 const App = () => {
   const [story, setStory] = useState(null)
@@ -63,6 +63,11 @@ const App = () => {
     exportStory(converter, 'twee')
   }
 
+  const jdrbotExport = () => {
+    console.log(convertToJdrBot(story))
+    //exportStory(convertToJdrBot, 'txt')
+  }
+
   return (
     <div className="app">
       <Header />
@@ -94,6 +99,7 @@ const App = () => {
                   </Segment>
                   <Button onClick={inkExport}>Export to Inkle's ink</Button>
                   <Button onClick={tweeHarloweExport}>Export to Twee (<em>Harlowe 3.1.0</em>)</Button>
+                  <Button onClick={jdrbotExport}>Export to JDR-Bot</Button>
                   <Divider />
                   <Button onClick={clear}>Import another story</Button>
                 </div>

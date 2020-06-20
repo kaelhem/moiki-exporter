@@ -112,4 +112,6 @@ a:hover {
   bottom: 20px;
   font-size: .9em;
   text-align: center;
+  left: 0;
+  right: 0;
 }
