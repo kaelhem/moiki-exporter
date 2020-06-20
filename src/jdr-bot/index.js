@@ -1,5 +1,4 @@
 import kebabCase from 'lodash.kebabcase'
-import { utils } from 'moiki-exporter'
 const { getHeader, getAuthor } = '../utils'
 
 const convertId = id => id.replace(/-/gi, '_')
