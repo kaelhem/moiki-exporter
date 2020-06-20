@@ -1,5 +1,5 @@
 import kebabCase from 'lodash.kebabcase'
-const { getHeader, getAuthor } = '../utils'
+import { getHeader, getAuthor } from '../utils'
 
 const convertId = id => id.replace(/-/gi, '_')
 const cleanContent = content => (
