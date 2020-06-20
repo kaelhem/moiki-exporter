@@ -10,6 +10,7 @@ This is a _work in progress_!
 Until now, you can use this tool to convert your stories made with [Moiki](https://moiki.fr) to these formats:
 + Inkle's Ink
 + Twee (Harlowe 3.1.0)
++ [JDR-Bot](https://github.com/Cyril-Fiesta/jdr-bot)
 
 Other formats are on the way!
 
