@@ -6996,10 +6996,10 @@ mkdirp@^0.5.1, mkdirp@^0.5.3, mkdirp@~0.5.1:
   dependencies:
     minimist "^1.2.5"
 
-moiki-exporter@^0.0.3:
-  version "0.0.3"
-  resolved "https://registry.yarnpkg.com/moiki-exporter/-/moiki-exporter-0.0.3.tgz#923a966e7fddfd2417f6246c32840df5885ef396"
-  integrity sha512-tp1jprABwNLvYfkPoIzDZD7mipYJ6a0NmiiN3jmbcykqxkxgd0NKwHVQFJO9x0IwwWuXZH2zB4oGinBL9R47CA==
+moiki-exporter@^0.0.5:
+  version "0.0.5"
+  resolved "https://registry.yarnpkg.com/moiki-exporter/-/moiki-exporter-0.0.5.tgz#98bd2c7f8a3ed0ad150494f6c7acf341d466d1fe"
+  integrity sha512-DwDDBZ+l/tv7PwifzSEwc0RNv5rIeLnRC2zYhuWyIGgvePZ1h/yudsS5Lf59kY7h456ewO1yokiaq82C3f+iVQ==
   dependencies:
     lodash.kebabcase "^4.1.1"
     uuid "^7.0.2"

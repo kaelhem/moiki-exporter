@@ -50,6 +50,7 @@ const App = () => {
       const blob = await zip.generateAsync({type: 'blob'})
       saveAs(blob, filename + '.zip')
     } catch (e) {
+      console.log(e)
       setError({ message: 'Oops, there is a bug :-(' })
     }
   }
