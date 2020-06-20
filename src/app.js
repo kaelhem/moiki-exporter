@@ -64,8 +64,7 @@ const App = () => {
   }
 
   const jdrbotExport = () => {
-    console.log(convertToJdrBot(story))
-    //exportStory(convertToJdrBot, 'txt')
+    exportStory(convertToJdrBot, 'txt')
   }
 
   return (
