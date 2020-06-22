@@ -4,9 +4,14 @@ import { getHeader, getAuthor } from '../utils'
 const convertId = id => id.replace(/-/gi, '_')
 const cleanContent = content => {
   return content
+    .replace(/(<(strong|b)>\s)/gi, ' <b>')
+    .replace(/(\s<\/(strong|b)>)/gi, '</b> ')
+    .replace(/(<em>\s)/gi, ' <em>')
+    .replace(/(\s<\/em>)/gi, '</em> ')
     .replace(/<\/p>/gi, '</p> ')
     .replace(/(<([/p]+)>)/gi, '')
     .replace(/&nbsp;/gi, ' ')
+    .replace(/(\s)+/gi, ' ')
     .trim()
 }
 

@@ -5,12 +5,17 @@ import { getHeader, getAuthor } from '../utils'
 const convertId = id => id.replace(/-/gi, '_')
 const cleanContent = content => (
   content
+    .replace(/(<(strong|b)>\s)/gi, ' <b>')
+    .replace(/(\s<\/(strong|b)>)/gi, '</b> ')
+    .replace(/(<em>\s)/gi, ' <em>')
+    .replace(/(\s<\/em>)/gi, '</em> ')
     .replace(/<\/p>/gi, '</p> ')
     .replace(/(<([/p]+)>)/gi, '')
     .replace(/(<([/]*)(strong|b)>)/gi, "''")
     .replace(/(<([/]*)(em)>)/gi, '//')
     .replace(/(<br(\s)*(\/)*>)/gi, ' ')
     .replace(/&nbsp;/gi, ' ')
+    .replace(/(\s)+/gi, ' ')
     .trim()
 )
 
