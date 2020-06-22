@@ -7,16 +7,18 @@ This repository provides tools to export your stories made with Moiki to other f
 
 This is a _work in progress_!
 
-Until now, you can use this tool to convert your stories made with [Moiki](https://moiki.fr) to these formats:
-+ Inkle's Ink
-+ Twee (Harlowe 3.1.0)
-+ [JDR-Bot](https://github.com/Cyril-Fiesta/jdr-bot)
+Well known formats:
++ **Inkle's Ink** - Ink is the language of Inkle's Studio. Export your _Moiki_ story in this format and open it with [Inky](https://www.inklestudios.com/ink/).
++ **Twee (Harlowe 3.1.0)** - Twee is the format behind [Twine](https://twinery.org/) and Harlowe is the default _story-format_ used in Twine2. It will allows you to compile your _moiki_ story to be Twine compatible with the help of [TweeGO](https://www.motoslave.net/tweego/).
 
-Other formats are on the way!
+Others formats are also available:
++ **JDR-Bot** - [JDR-Bot](https://github.com/Cyril-Fiesta/jdr-bot) is a french discord bot that allows teams to play _roleplay games_. This export will allows you to transform your _Moiki_ story in a scenario for this bot.
+
+_Other formats are on the way. Stay tuned!_
 
 ## Howto
 
-Export your story made on Moiki ([documentation](https://moiki.fr/documentation/export) - *french only*) and drag the json file on [Moiki-Exporter website](https://moiki-exporter.netlify.app/). Then you can choose the export format that you want.
+Export your story made on Moiki as JSON format ([documentation](https://moiki.fr/documentation/export) - *french only*) and drag the downloaded _.zip_ file on [Moiki-Exporter website](https://moiki-exporter.netlify.app/). Then you can choose the export format that you want.
 
 ## Contributing
 
