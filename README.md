@@ -5,7 +5,7 @@
 ## How to launch this webapp locally
 
 This project was bootstrapped with Create React App.
-To launch it you will need [Node](https://nodejs.org/) installed.
+To launch it, you will need [Node](https://nodejs.org/) installed.
 
 Open a terminal and follow these steps:
 
