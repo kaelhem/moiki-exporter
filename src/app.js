@@ -8,7 +8,13 @@ import kebabCase from 'lodash.kebabcase'
 import { saveAs } from 'file-saver'
 import JSZip from 'jszip'
 import { Button, Segment, Divider, Image } from 'semantic-ui-react'
-import { version, convertToInk, convertToTwee, convertToJdrBot } from 'moiki-exporter'
+import {
+  version,
+  utils,
+  convertToInk,
+  convertToTwee,
+  convertToJdrBot
+} from 'moiki-exporter'
 
 const App = () => {
   const [story, setStory] = useState(null)
@@ -26,14 +32,6 @@ const App = () => {
         kind: 'normal'
       })
     }
-  }
-
-  const getAuthor = () => {
-    if (story && story.meta && story.meta.author) {
-      const { firstname, lastname, pseudo } = story.meta.author
-      return pseudo ? pseudo : firstname + ' ' + lastname
-    }
-    return null
   }
 
   const clear = () => {
@@ -63,6 +61,11 @@ const App = () => {
     const converter = s => convertToTwee(s, 'harlowe')
     exportStory(converter, 'twee')
   }
+
+  const tweeSugarcubeExport = () => {
+    const converter = s => convertToTwee(s, 'sugarcube')
+    exportStory(converter, 'twee')
+  }  
 
   const jdrbotExport = () => {
     exportStory(convertToJdrBot, 'txt')
@@ -95,10 +98,11 @@ const App = () => {
                       </Image>
                     )}
                     <h2>{story.meta.name}</h2>
-                    <div><em>A story by {getAuthor() || 'Unknown user'}</em></div>
+                    <div><em>A story by {utils.getAuthor(story.meta)}</em></div>
                   </Segment>
                   <Button onClick={inkExport}>Export to Inkle's ink</Button>
                   <Button onClick={tweeHarloweExport}>Export to Twee (<em>Harlowe 3.1.0</em>)</Button>
+                  <Button onClick={tweeSugarcubeExport}>Export to Twee (<em>SugarCube 2.31.1</em>)</Button>
                   <Button onClick={jdrbotExport}>Export to JDR-Bot</Button>
                   <Divider />
                   <Button onClick={clear}>Import another story</Button>
