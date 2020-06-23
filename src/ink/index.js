@@ -10,6 +10,8 @@ const cleanContent = content => {
     .replace(/(\s<\/em>)/gi, '</em> ')
     .replace(/<\/p>/gi, '</p> ')
     .replace(/(<([/p]+)>)/gi, '')
+    .replace(/(<([/]*)(span)>)/gi, '')
+    .replace(/<span class="ql-cursor">/gi, '')
     .replace(/&nbsp;/gi, ' ')
     .replace(/(\s)+/gi, ' ')
     .trim()

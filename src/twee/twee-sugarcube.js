@@ -23,10 +23,16 @@ const cleanContent = content => (
 
 const esc = content => content.replace(/"/gi, '\\"')
 
-const addCondition = (data, variables, kind='goto') => (
-`(if: ${variables[data.condition.params].tweeVar})[(${kind}: "${convertId(data.condition.next)}")]
-(else:)[(${kind}: "${convertId(data.next)}")]
-`)
+const addCondition = (data, variables, content=null) => {
+  const ifContent = content ? `[[${content}|${convertId(data.condition.next)}]]` : `<<include "${convertId(data.condition.next)}">>`
+  const elseContent = content ? `[[${content}|${convertId(data.next)}]]` : `<<include "${convertId(data.next)}">>`
+  return (
+`<<if ${variables[data.condition.params].tweeVar}>>
+  ${ifContent}
+<<else>>
+  ${elseContent}
+<</if>>
+`)}
 
 const addLink = (data, variables) => {
   const condition = (data.condition && data.condition.next && data.condition.params) ? data.condition.params : null
@@ -35,11 +41,11 @@ const addLink = (data, variables) => {
   const content = esc(cleanContent(data.content))
   if (actionId) {
     const {tweeVar, desc} = variables[actionId]
-    return `(link: "${content}")[(set: ${tweeVar} to not ${tweeVar}, $actionText to "${esc(desc)}", $actionPassage to "${next}", $isObjectWin to ${tweeVar})[(goto: "Toggle-Object")]]\n`
+    return `[[${content}|Toggle-Object][${tweeVar} to not ${tweeVar}; $actionText to "${esc(desc)}"; $actionPassage to "${next}"; $isObjectWin to ${tweeVar}]]\n`
   } else if (condition) {
-    return `(link: "${content}")[${addCondition(data, variables)}]\n`
+    return `${addCondition(data, variables, content)}\n`
   } else if (next) {
-    return `(link: "${content}")[(goto: "${next}")]\n`
+    return `[[${content}|${next}]]\n`
   }
   return ''
 }
@@ -50,16 +56,16 @@ const addNext = (data, variables) => {
   const next = data.next ? convertId(data.next) : null
   if (actionId) {
     const {tweeVar, desc} = variables[actionId]
-    return `(set: ${tweeVar} to not ${tweeVar}, $actionText to "${esc(desc)}", $actionPassage to "${next}", $isObjectWin to ${tweeVar})[(display: "Toggle-Object")]\n`
+    return `<<set ${tweeVar} to not ${tweeVar}; $actionText to "${esc(desc)}"; $actionPassage to "${next}"; $isObjectWin to ${tweeVar}>>\n<<include "Toggle-Object">>\n`
   } else if (condition) {
-    return `${addCondition(data, variables, 'display')}\n`
+    return `${addCondition(data, variables)}\n`
   } else if (next) {
-    return `(display: "${next}")\n`
+    return `<<include "${next}">>\n`
   }
   return ''
 }
 
-export const convertToHarlowe = (story) => {
+export const convertToSugarcube = (story) => {
   const { _id, meta, firstSequence, sequences, assets } = story
 
   let variables = {}
@@ -86,17 +92,17 @@ ${meta.description}
 :: StoryData
 {
   "ifid": "${uuidv4()}",
-  "format": "Harlowe",
-  "format-version": "3.1.0",
+  "format": "SugarCube",
+  "format-version": "2.31.1",
   "start": "${convertId(firstSequence)}",
   "zoom": 1
 }
 
 `
   const varsAsArray = Object.entries(variables).map(([_, data]) => data)
-  let variablesSetup = '(set: $actionText to false, $actionPassage to false, $isObjectWin to false)\n'
+  let variablesSetup = '<<set $actionText to false; $actionPassage to false; $isObjectWin to false>>\n'
   for (let variable of varsAsArray) {
-    variablesSetup += '(set: ' + variable.tweeVar + ' to false)\n'
+    variablesSetup += '<<set ' + variable.tweeVar + ' to false>>\n'
   }
 
   for (let sequence of sequences) {
@@ -116,9 +122,12 @@ ${meta.description}
 
   result += `
 :: Toggle-Object
-(if: $isObjectWin)[Objet récupéré : {$actionText}]
-(else:)[Objet perdu : {$actionText}]
-(display: $actionPassage)
+<<if $isObjectWin>>
+  récupéré : $actionText
+<<else>>
+  perdu : $actionText
+<</if>>
+<<include [[$actionPassage]]>>
 `
   return result
 }
