@@ -94,7 +94,7 @@ export const simplifyStory = ({sequences, firstSequence, assets}, vars, cleanTex
     for (let node of chain) {
       chainWithObjects.push(node)
       if (node.action && node.action.params && typeof node.action.params === 'string') {
-        chainWithObjects.push({objectAction: variables[node.action.params]})
+        chainWithObjects.push({objectAction: vars[node.action.params]})
       }
     }
     const chainSum = []
