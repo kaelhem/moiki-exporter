@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@react-pdf/renderer": "^2.0.0-beta.6",
     "@testing-library/jest-dom": "^4.2.4",
     "@testing-library/react": "^9.5.0",
     "@testing-library/user-event": "^7.2.1",
@@ -12,7 +13,7 @@
     "jszip": "^3.5.0",
     "jszip-utils": "^0.1.0",
     "lodash.kebabcase": "^4.1.1",
-    "moiki-exporter": "^0.0.9",
+    "moiki-exporter": "^0.1.1",
     "moment": "^2.26.0",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
@@ -20,6 +21,7 @@
     "react-scripts": "3.4.1",
     "react-sizes": "^2.0.0",
     "regenerator-runtime": "^0.13.5",
+    "save-svg-as-png": "^1.4.17",
     "semantic-ui-css": "^2.4.1",
     "semantic-ui-react": "^0.88.2"
   },
