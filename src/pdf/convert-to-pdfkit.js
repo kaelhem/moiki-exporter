@@ -154,7 +154,13 @@ export const generatePdfStream = async (story, settings, pdfData=null) => {
   }
 
   let sequences = simplifyStory(clonedeep(story), variables, cleanContent)
-  let sequencesShuffle = !pdfData ? [0, ...shuffleArray(Array.from({length: sequences.length - 1}, (_, k) => k + 1))] : pdfData.sequencesShuffle
+  const middleIndex = Math.floor(sequences.length / 2)
+  const middleSize = sequences.length - (middleIndex + 1)
+  let sequencesShuffle = !pdfData ? [
+    0,
+    ...shuffleArray(Array.from({length: middleSize}, (_, k) => k + 1)),
+    ...shuffleArray(Array.from({length: sequences.length - (middleSize + 1)}, (_, k) => k + middleSize + 1))
+  ] : pdfData.sequencesShuffle
 
   const doc = new PDFDocument({
     size: settings.format,
@@ -286,7 +292,7 @@ export const generatePdfStream = async (story, settings, pdfData=null) => {
       lastEntry.choices.forEach((choice, choiceIdx) => {
         doc.font(font.BOLD).text(choice.content, {align: 'center'}).font(font.ITALIC).fontSize(settings.fontSize < 12 ? settings.fontSize : 12).fillColor('#066ddd')
         const docX = doc.x
-        if (choice.condition && choice.condition.next && choice.condition.params) {
+        if (choice.condition && choice.condition.next && choice.condition.params && getSequenceByIndex(choice.condition.next) !== getSequenceByIndex(choice.next)) {
           doc.text(`Avec l'objet "${variables[choice.condition.params].desc.trim()}" : aller en ${getSequenceByIndex(choice.condition.next)} (p.${pageLinksMap[choice.condition.next] || 'XX'})`, 0, doc.y - 2, { goTo: choice.condition.next, underline: true, align: 'center', width: doc.page.width })
           doc.text(`Sinon : aller en ${getSequenceByIndex(choice.next)} (p.${pageLinksMap[choice.next] || 'XX'})`, 0, doc.y, { goTo: choice.next, underline: true, align: 'center', width: doc.page.width })
         } else {
@@ -305,8 +311,12 @@ export const generatePdfStream = async (story, settings, pdfData=null) => {
         doc.addPage()
       }
       doc.font(font.ITALIC).fillColor('#066ddd')
-      doc.text(`Avec l'objet "${variables[lastEntry.condition.params].desc.trim()}" : aller en ${getSequenceByIndex(lastEntry.condition.next)} (p.${pageLinksMap[lastEntry.condition.next] || 'XX'})`, 0, doc.y - 2, { goTo: lastEntry.condition.next, underline: true, align: 'center', width: doc.page.width })
-      doc.text(`Sinon : aller en ${getSequenceByIndex(lastEntry.next)} (p.${pageLinksMap[lastEntry.next] || 'XX'})`, 0, doc.y, { goTo: lastEntry.next, underline: true, align: 'center', width: doc.page.width })
+      if (getSequenceByIndex(lastEntry.condition.next) !== getSequenceByIndex(lastEntry.next)) {
+        doc.text(`Avec l'objet "${variables[lastEntry.condition.params].desc.trim()}" : aller en ${getSequenceByIndex(lastEntry.condition.next)} (p.${pageLinksMap[lastEntry.condition.next] || 'XX'})`, 0, doc.y - 2, { goTo: lastEntry.condition.next, underline: true, align: 'center', width: doc.page.width })
+        doc.text(`Sinon : aller en ${getSequenceByIndex(lastEntry.next)} (p.${pageLinksMap[lastEntry.next] || 'XX'})`, 0, doc.y, { goTo: lastEntry.next, underline: true, align: 'center', width: doc.page.width })
+      } else {
+        doc.text(`Aller en ${getSequenceByIndex(lastEntry.next)} (p.${pageLinksMap[lastEntry.next] || 'XX'})`, 0, doc.y - 2, { goTo: lastEntry.next, underline: true, align: 'center', width: doc.page.width })
+      }
       doc.fontSize(settings.fontSize).font(font.REGULAR).fillColor('#000')
       doc.x = docX
     }
