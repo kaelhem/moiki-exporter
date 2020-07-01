@@ -138,7 +138,8 @@ export const generatePdfStream = async (story, settings, pdfData=null) => {
     ITALIC: getFont(settings.font, 2),
     BOLD_ITALIC: getFont(settings.font, 3)
   }
-
+  
+  /*
   const applyStyle = (kind) => {
     switch (kind) {
       case 'b': return [font.BOLD, settings.fontSize]; break
@@ -152,6 +153,7 @@ export const generatePdfStream = async (story, settings, pdfData=null) => {
       default: return [font.REGULAR, settings.fontSize]
     }
   }
+  */
 
   let sequences = simplifyStory(clonedeep(story), variables, cleanContent)
   const middleIndex = Math.floor(sequences.length / 2)
@@ -222,7 +224,7 @@ export const generatePdfStream = async (story, settings, pdfData=null) => {
   try {
     const imgWidth = doc.page.width - horizontalMargin - 100
     const imgHeight = imgWidth * 3 / 4
-    const {datauri, ratio} = await getImageDataUri(meta.image, imgWidth, imgHeight)
+    const {datauri} = await getImageDataUri(meta.image, imgWidth, imgHeight)
     doc.moveDown()
     doc.image(datauri, {fit: [doc.page.width - horizontalMargin, imgHeight], align: 'center'})
     doc.moveDown()
@@ -246,8 +248,6 @@ export const generatePdfStream = async (story, settings, pdfData=null) => {
   for (let i of sequencesShuffle) {
     const sequence = sequences[i]
     const lastEntry = sequence.chain.reverse()[0]
-    const firstSequence = sequence.chainedContent.slice(0, 1)
-    const followingSequences = sequence.chainedContent.slice(1)
     const hasChoices = lastEntry.choices && lastEntry.choices.length > 0
     if (doc.y > settings.margins.top) {
       doc.moveDown()

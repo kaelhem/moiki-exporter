@@ -71,10 +71,6 @@ const CreatePdf = (props) => {
   const [iframeSrc, setIframeSrc] = useState(null)
   const [blob, setBlob] = useState(null)
 
-  useEffect(() => {
-    convertToPdf()
-  }, [])
-
   const convertToPdf = async (pdfData=null) => {
     setGeneratingPdf(true)
     const {stream, pageLinksMap, sequencesShuffle} = await generatePdfStream(story, pdfSettings, pdfData)
@@ -91,6 +87,11 @@ const CreatePdf = (props) => {
     }
     stream.on('finish', onStreamFinished)
   }
+
+  useEffect(() => {
+    convertToPdf()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const downloadPdf = () => {
     saveAs(blob, kebabCase(story.meta.name) + '.pdf')
