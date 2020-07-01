@@ -163,7 +163,7 @@ export const generatePdfStream = async (story, settings, pdfData=null) => {
     ...shuffleArray(Array.from({length: middleSize}, (_, k) => k + 1)),
     ...shuffleArray(Array.from({length: sequences.length - (middleSize + 1)}, (_, k) => k + middleSize + 1))
   ] : pdfData.sequencesShuffle
-
+  console.log(sequences)
   const doc = new PDFDocument({
     size: settings.format,
     bufferPages: true,
@@ -247,7 +247,7 @@ export const generatePdfStream = async (story, settings, pdfData=null) => {
 
   for (let i of sequencesShuffle) {
     const sequence = sequences[i]
-    const lastEntry = sequence.chain.reverse()[0]
+    const lastEntry = sequence.chain.slice(-1)[0]
     const hasChoices = lastEntry.choices && lastEntry.choices.length > 0
     if (doc.y > settings.margins.top) {
       doc.moveDown()
