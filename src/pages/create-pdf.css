@@ -1,0 +1,39 @@
+.two-columns-view {
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  align-self: stretch;
+}
+
+.divided-panel {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 50vw;
+}
+
+.number-input .ui.small.input {
+  width: 169px;
+}
+
+.number-input {
+  margin-bottom: 5px;
+}
+
+.ui.grid {
+  margin-bottom: 0;
+}
+
+.ui.grid>.row>[class*="six wide"].column.field-label {
+  display: flex;
+  align-items: center;
+  padding-bottom: 5px;
+}
+
+.ui.grid>.row {
+  padding: 0;
+  height: 43px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}

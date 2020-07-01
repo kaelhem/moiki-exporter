@@ -19,6 +19,15 @@ a:hover {
   color: #246b43 !important;
 }
 
+a.ui.button,
+a.ui.button:hover {
+  color: rgba(0, 0, 0, .6) !important;
+}
+
+.app .ui.green.button, .ui.green.buttons .button {
+  background-color: #06a955;
+}
+
 .app {
   display: flex;
   flex-direction: column;
@@ -78,7 +87,8 @@ a:hover {
   width: 300px;
 }
 
-.export-buttons .ui.button {
+.export-buttons .ui.button,
+.export-buttons .ui.fluid.dropdown {
   margin-bottom: 5px;
   margin-right: 0;
 }
