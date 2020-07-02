@@ -4,7 +4,7 @@ import { bindActionCreators } from 'redux'
 import { connect } from 'react-redux'
 import { actions as storyActions } from 'core/reducers/story'
 import { actions as pdfActions } from 'core/reducers/pdf'
-import { Button, Divider, Icon, Select, Dimmer, Loader, Grid } from 'semantic-ui-react'
+import { Button, Divider, Icon, Select, Dimmer, Loader, Grid, Radio } from 'semantic-ui-react'
 import NumberInput from 'semantic-ui-react-numberinput'
 import { generatePdfStream } from '../pdf/convert-to-pdfkit'
 import { saveAs } from 'file-saver'
@@ -154,6 +154,14 @@ const CreatePdf = (props) => {
               onChange={(value) => updateSettings({...pdfSettings, margins: { ...pdfSettings.margins, top: value, bottom: value}})}
               min={20}
               max={100}
+            />
+            <Radio
+              toggle
+              label="Avoid page break on paragraphs"
+              defaultChecked={pdfSettings.avoidSequencesSplitting}
+              value={pdfSettings.avoidSequencesSplitting}
+              onChange={() => updateSettings({...pdfSettings, avoidSequencesSplitting: !pdfSettings.avoidSequencesSplitting})}
+              style={{ margin: '.5em auto' }}
             />
           </Grid>
           <Button onClick={resetDefault} style={{ marginTop: 15 }}>

@@ -37,3 +37,10 @@
   justify-content: center;
   align-items: center;
 }
+
+.ui.toggle.checkbox input:focus:checked~.box:before,
+.ui.toggle.checkbox input:focus:checked~label:before,
+.ui.toggle.checkbox input:checked~.box:before,
+.ui.toggle.checkbox input:checked~label:before {
+  background-color: #0aa855!important;
+}

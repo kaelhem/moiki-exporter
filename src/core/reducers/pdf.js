@@ -17,7 +17,8 @@ const initialState = {
       bottom: 72,
       left: 72,
       right: 72
-    }
+    },
+    avoidSequencesSplitting: false
   }
 }
 
