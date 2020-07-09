@@ -34,6 +34,8 @@ export const getAuthor = (story) => {
       + cumulated text of the chained sequences (as strings)
       + object that corresponding to won objects
       ex.: ['text of several sequences', {pngIcon, desc}, 'text of following sequences']
+
+  /!\ this method is destructive for the sequences object pass in. You should use a deep copy to keep you data untouched.
 */
 export const simplifyStory = ({sequences, firstSequence, assets}, vars, cleanTextFn) => {
   const tree = {}
@@ -102,7 +104,7 @@ export const simplifyStory = ({sequences, firstSequence, assets}, vars, cleanTex
     for (let chainObj of chainWithObjects) {
       if (chainObj.objectAction) {
         if (contentSum) {
-          chainSum.push(contentSum.replace(/(\s)*<br(\s)*\/>(\s)*/gi, '\u000D\u000A'))
+          chainSum.push(contentSum.replace(/(\s)*<br(\s)*\/>(\s)*/gi, '\u000D\u000A').trim())
           contentSum = ''
         }
         chainSum.push(chainObj.objectAction)
@@ -111,9 +113,12 @@ export const simplifyStory = ({sequences, firstSequence, assets}, vars, cleanTex
       }
     }
     if (contentSum) {
-      chainSum.push(contentSum.replace(/(\s)*<br(\s)*\/>(\s)*/gi, '\u000D\u000A'))
+      chainSum.push(contentSum.replace(/(\s)*<br(\s)*\/>(\s)*/gi, '\u000D\u000A').trim())
     }
     chap.chainedContent = chainSum
   }
+  chapters.forEach(seq => {
+    seq.chain = seq.chain.map(({chain, chainedContent, ...rest}) => ({...rest}))
+  })
   return chapters
 }
