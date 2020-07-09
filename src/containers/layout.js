@@ -19,7 +19,7 @@ const Layout = ({ children }) => {
         colorBackground="#246b44"
         text="View source on GitHub"
         repo="https://github.com/kaelhem/moiki-exporter"
-        side="left"
+        side="right"
       />
     </div>
   )

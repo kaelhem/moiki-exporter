@@ -1,63 +1,8 @@
 import { utils } from 'moiki-exporter'
 import PDFDocument from 'pdfkit/js/pdfkit.standalone'
-import clonedeep from 'lodash.clonedeep'
+import { getFont, loadFont } from 'utils/pdf-story-utils'
 const blobStream = require('blob-stream')
-
-const { getAuthor, simplifyStory } = utils
-
-const shuffleArray = (arr) => {
-  const array = [...arr]
-  for (let i = array.length - 1; i > 0; --i) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]]
-  }
-  return array
-}
-
-const fontFormat = {
-  REGULAR: 0,
-  BOLD: 1,
-  ITALIC: 2,
-  BOLD_ITALIC: 3
-}
-
-const getFont = (font, format=fontFormat.REGULAR) => {
-  let fontName = ''
-  let fontStyles = null
-  switch (font) {
-    case 'courier':
-      fontName = 'Courier'
-      fontStyles = ['', '-Bold', '-Oblique', '-BoldOblique']
-    break
-    case 'times':
-      fontName = 'Times'
-      fontStyles = ['-Roman', '-Bold', '-Italic', '-BoldItalic']
-    break
-    case 'helvetica':
-      fontName = 'Helvetica'
-      fontStyles = ['', '-Bold', '-Oblique', '-BoldOblique']
-    break
-    case 'catamaran*':
-      fontName = 'Catamaran/Catamaran'
-      fontStyles = ['-Regular', '-Bold', '-Regular', '-Bold']
-    break
-    case 'comfortaa*':
-      fontName = 'Comfortaa/Comfortaa'
-      fontStyles = ['-Regular', '-Bold', '-Regular', '-Bold']
-    break
-    case 'muli*':
-      fontName = 'Muli/Muli'
-      fontStyles = ['-Regular', '-Bold', '-Regular', '-Bold']
-    break
-    case 'roboto*':
-      fontName = 'Roboto/Roboto'
-      fontStyles = ['-Regular', '-Bold', '-Regular', '-Bold']
-    break
-    default:
-      return getFont('helvetica', format)
-  }
-  return fontName + fontStyles[format]
-}
+const { getAuthor } = utils
 
 const IMAGE_CACHE = {
   src: null,
@@ -65,14 +10,6 @@ const IMAGE_CACHE = {
   h: 0,
   ratio: 0,
   datauri: null
-}
-
-const loadFont = async (font) => {
-  try {
-    return await fetch('/fonts/' + font + '.ttf').then(response => response.arrayBuffer())
-  } catch (e) {
-    console.log(e)
-  }
 }
 
 const getImageDataUri = (url, width, height) => {
@@ -111,26 +48,7 @@ const getImageDataUri = (url, width, height) => {
 }
 
 export const generatePdfStream = async (story, settings, pdfData=null) => {
-  const { meta, assets } = story
-  let variables = {}
-  for (let asset of assets) {
-    variables[asset.id] = asset
-  }
-
-  const cleanContent = content => {
-    return content
-      .replace(/(<\/*(strong|b)>)/gi, '')
-      .replace(/(<\/*(em)>)/gi, '')
-      .replace(/(<\/*(h\d)>)/gi, '')
-      .replace(/<span class="ql-cursor">/gi, '')
-      .replace(/<\/p>/gi, '</p> ')
-      .replace(/<\/*p>/gi, '')
-      .replace(/(<\/*(span)>)/gi, '')
-      .replace(/(\s)+/gi, ' ')
-      .replace(/\s*<br\s*\/*>(\s|&nbsp;)*/gi, '\n')
-      .replace(/(\s)*&nbsp;(\s)*/gi, '\u00A0')
-      .trim()
-  }
+  const { meta, variables, sequences, sequencesShuffle } = story
 
   const font = {
     REGULAR: getFont(settings.font, 0),
@@ -138,31 +56,7 @@ export const generatePdfStream = async (story, settings, pdfData=null) => {
     ITALIC: getFont(settings.font, 2),
     BOLD_ITALIC: getFont(settings.font, 3)
   }
-  
-  /*
-  const applyStyle = (kind) => {
-    switch (kind) {
-      case 'b': return [font.BOLD, settings.fontSize]; break
-      case 'em': return [font.ITALIC, settings.fontSize]; break
-      case 'h1': return [font.BOLD, settings.fontSize + 10]; break
-      case 'h2': return [font.BOLD, settings.fontSize + 8]; break
-      case 'h3': return [font.BOLD, settings.fontSize + 6]; break
-      case 'h4': return [font.BOLD, settings.fontSize + 4]; break
-      case 'h5': return [font.REGULAR, settings.fontSize + 4]; break
-      case 'h6': return [font.REGULAR, settings.fontSize + 2]; break
-      default: return [font.REGULAR, settings.fontSize]
-    }
-  }
-  */
 
-  let sequences = simplifyStory(clonedeep(story), variables, cleanContent)
-  const middleIndex = Math.floor(sequences.length / 2)
-  const middleSize = sequences.length - (middleIndex + 1)
-  let sequencesShuffle = !pdfData ? [
-    0,
-    ...shuffleArray(Array.from({length: middleSize}, (_, k) => k + 1)),
-    ...shuffleArray(Array.from({length: sequences.length - (middleSize + 1)}, (_, k) => k + middleSize + 1))
-  ] : pdfData.sequencesShuffle
   const doc = new PDFDocument({
     size: settings.format,
     bufferPages: true,
@@ -183,7 +77,9 @@ export const generatePdfStream = async (story, settings, pdfData=null) => {
       const fontName = getFont(settings.font, i)
       if (!doc._registeredFonts[fontName]) {
         const bufferFont = await loadFont(fontName)
-        doc.registerFont(fontName, bufferFont)
+        if (bufferFont) {
+          doc.registerFont(fontName, bufferFont)
+        }
       }
     }
   }
@@ -259,7 +155,7 @@ export const generatePdfStream = async (story, settings, pdfData=null) => {
 
     for (let chain of sequence.chainedContent) {
       if (typeof chain === 'string') {
-        height += doc.heightOfString(chain.trim(), {align: 'justify'})
+        height += doc.heightOfString(chain, {align: 'justify'})
         height += doc.currentLineHeight(true) * .5
       } else {
         height += doc.currentLineHeight(true)
@@ -323,7 +219,7 @@ export const generatePdfStream = async (story, settings, pdfData=null) => {
 
     for (let chain of sequence.chainedContent) {
       if (typeof chain === 'string') {
-        doc.text(chain.trim(), {align: 'justify'})
+        doc.text(chain, {align: 'justify'})
         doc.moveDown(.5)
       } else {
         doc.moveDown()
@@ -459,5 +355,5 @@ export const generatePdfStream = async (story, settings, pdfData=null) => {
   }
 
   doc.end()
-  return {stream, pageLinksMap, sequencesShuffle}
+  return {stream, pageLinksMap}
 }

@@ -1,97 +1,110 @@
 import React, { useState, useEffect } from 'react'
-import { Redirect } from 'react-router-dom'
+import { Route, Switch, Redirect, Link } from 'react-router-dom'
 import { bindActionCreators } from 'redux'
 import { connect } from 'react-redux'
 import { actions as storyActions } from 'core/reducers/story'
 import { actions as pdfActions } from 'core/reducers/pdf'
-import { Button, Divider, Icon, Select, Dimmer, Loader, Grid, Radio } from 'semantic-ui-react'
-import NumberInput from 'semantic-ui-react-numberinput'
+import { Button, Divider, Icon, Loader, Menu } from 'semantic-ui-react'
+import moment from 'moment'
 import { generatePdfStream } from '../pdf/convert-to-pdfkit'
 import { saveAs } from 'file-saver'
 import kebabCase from 'lodash.kebabcase'
+import * as PDFViews from './pdf'
 import './create-pdf.css'
 
-const SelectField = ({ label, value, options, onChange }) => {
-  const opts = options.map(opt => {
-    if (typeof opt === 'string') {
-      return {key: opt, value: opt, text: opt}
-    }
-    return opt
-  })
-  return (
-    <Grid.Row>
-      <Grid.Column width={6} className="field-label">
-        <b>{ label }</b>
-      </Grid.Column>
-      <Grid.Column width={10}>
-        <Select
-          fluid
-          style={{ flexGrow: 1, width: 'auto' }}
-          value={ value }
-          onChange={(_, opt) => onChange(opt.value)} 
-          options={opts}
-        />
-      </Grid.Column>
-    </Grid.Row>
-  )
-}
-
-const NumberField = ({ label, value, min, max, onChange }) => {
-  return (
-    <Grid.Row>
-      <Grid.Column width={6} className="field-label">
-        <b>{ label }</b>
-      </Grid.Column>
-      <Grid.Column width={10}>
-        <NumberInput
-          className="number-input"
-          value={value.toString()}
-          onChange={(value) => onChange(parseInt(value))}
-          minValue={min}
-          maxValue={max}
-          allowMouseWheel={true}
-        />
-      </Grid.Column>
-    </Grid.Row>
-  )
+const STATUS = {
+  UP_TO_DATE: 'upToDate',
+  NEED_UPDATE: 'needUpdate'
 }
 
 const CreatePdf = (props) => {
   const {
     showPdfView,
     pdfSettings,
-    updateSettings,
     story,
     clear,
     exitPdfView,
-    resetDefault
+    initPdfStory,
+    pdfStory,
+    shuffleStory
   } = props
 
+  const [pdfStatus, setPdfStatus] = useState(STATUS.UP_TO_DATE)
+  const [needUpdate, setNeedUpdate] = useState(false)
+  const [lastUpdateTime, setLastUpdateTime] = useState(null)
   const [generatingPdf, setGeneratingPdf] = useState(false)
   const [iframeSrc, setIframeSrc] = useState(null)
   const [blob, setBlob] = useState(null)
 
+  let startTime = null
+  let isProcessing = false
   const convertToPdf = async (pdfData=null) => {
+    if (!pdfData) {
+      if (isProcessing || !pdfStory) {
+        // alreaydy generating... wait.
+        return
+      }
+      startTime = new Date()
+    }
+    isProcessing = true
+    console.log(pdfSettings)
     setGeneratingPdf(true)
-    const {stream, pageLinksMap, sequencesShuffle} = await generatePdfStream(story, pdfSettings, pdfData)
-    const onStreamFinished = () => {
-      setBlob(stream.toBlob('application/pdf'))
-      const url = stream.toBlobURL('application/pdf')
-      setIframeSrc(url)
+    const {stream, pageLinksMap} = await generatePdfStream(pdfStory, pdfSettings, pdfData)
+    const onStreamFinished = async () => {
       stream.off('finish', onStreamFinished)
       if (!pdfData) {
-        convertToPdf({pageLinksMap, sequencesShuffle})
+        await convertToPdf({pageLinksMap})
       } else {
+        setBlob(stream.toBlob('application/pdf'))
+        const url = stream.toBlobURL('application/pdf')
+        setIframeSrc(url)
         setGeneratingPdf(false)
+        setLastUpdateTime({startTime, endTime: new Date()})
+        isProcessing = false
       }
     }
     stream.on('finish', onStreamFinished)
   }
 
   useEffect(() => {
-    convertToPdf()
+    let timer
+    if (pdfStatus === STATUS.NEED_UPDATE) {
+      timer = setTimeout(convertToPdf, 1000)
+    }
+    return () => {
+      if (timer) {
+        clearTimeout(timer)
+      }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [pdfStatus, pdfSettings])
+
+  useEffect(() => {
+    setNeedUpdate(new Date())
+  }, [pdfSettings])
+
+  useEffect(() => {
+    if (story) {
+      if (!pdfStory) {
+        initPdfStory()
+      } else {
+        convertToPdf()
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pdfStory, story])
+
+  useEffect(() => {
+    if (needUpdate && lastUpdateTime) {
+      if (moment(needUpdate).isBetween(lastUpdateTime.startTime, lastUpdateTime.endTime)) {
+        setPdfStatus(STATUS.NEED_UPDATE)
+      } else if (moment(needUpdate).isAfter(lastUpdateTime.endTime)) {
+        setPdfStatus(STATUS.NEED_UPDATE)
+      } else {
+        setPdfStatus(STATUS.UP_TO_DATE)
+      }
+    }
+  }, [needUpdate, lastUpdateTime])
 
   const downloadPdf = () => {
     saveAs(blob, kebabCase(story.meta.name) + '.pdf')
@@ -105,99 +118,79 @@ const CreatePdf = (props) => {
     return <Redirect to="/export" />    
   }
 
-  return (
-    <div className="two-columns-view">
+  return pdfStory ? (
+     <div className="two-columns-view">
       <div className="divided-panel">
-        <div className="export-buttons" style={{ width: 400 }}>
-          <Dimmer active={generatingPdf} inverted>
-            <Loader>Generating PDF...</Loader>
-          </Dimmer>
-          <Divider horizontal style={{ marginBottom: 25 }}>Settings</Divider>
-          <Grid columns={2}>
-            <SelectField
-              label="Page format"
-              value={pdfSettings.format}
-              onChange={(value) => updateSettings({...pdfSettings, format: value})}
-              options={['A4', 'A5', 'LETTER', 'FOLIO']}
+        <div className="pdf-view-container">
+          <Menu secondary style={{ padding: '.5em .8em', margin: 0 }}>
+            <Menu.Item
+              style={{ marginLeft: 0 }}
+              name='sequences'
+              active={props.location.pathname.endsWith('/create-pdf')}
+              as={Link}
+              to='/create-pdf'
             />
-            <SelectField
-              label="Font family"
-              value={pdfSettings.font}
-              onChange={(value) => updateSettings({...pdfSettings, font: value})}
-              options={[
-                {key: 'courier', value: 'courier', text: 'Courier'},
-                {key: 'helvetica', value: 'helvetica', text: 'Helvetica'},
-                {key: 'times', value: 'times', text: 'Times New Roman'},
-                {key: 'catamaran', value: 'catamaran*', text: 'Catamaran'},
-                {key: 'comfortaa', value: 'comfortaa*', text: 'Comfortaa'},
-                {key: 'muli', value: 'muli*', text: 'Muli'},
-                {key: 'roboto', value: 'roboto*', text: 'Roboto'}
-              ]}
+            <Menu.Item
+              name='format'
+              active={props.location.pathname.endsWith('/format')}
+              as={Link}
+              to='/create-pdf/format'
             />
-            <NumberField
-              label="Font size"
-              value={pdfSettings.fontSize}
-              onChange={(value) => updateSettings({...pdfSettings, fontSize: value})}
-              min={10}
-              max={20}
-            />
-            <NumberField
-              label="Horizontal margins"
-              value={pdfSettings.margins.left}
-              onChange={(value) => updateSettings({...pdfSettings, margins: { ...pdfSettings.margins, left: value, right: value}})}
-              min={20}
-              max={100}
-            />
-            <NumberField
-              label="Vertical margins"
-              value={pdfSettings.margins.top}
-              onChange={(value) => updateSettings({...pdfSettings, margins: { ...pdfSettings.margins, top: value, bottom: value}})}
-              min={20}
-              max={100}
-            />
-            <Radio
-              toggle
-              label="Avoid page break on paragraphs"
-              defaultChecked={pdfSettings.avoidSequencesSplitting}
-              value={pdfSettings.avoidSequencesSplitting}
-              onChange={() => updateSettings({...pdfSettings, avoidSequencesSplitting: !pdfSettings.avoidSequencesSplitting})}
-              style={{ margin: '.5em auto' }}
-            />
-          </Grid>
-          <Button onClick={resetDefault} style={{ marginTop: 15 }}>
-            <Icon name='repeat' /> Reset default settings
-          </Button>
-          <Button onClick={() => convertToPdf()} color="green">
-            <Icon name='sync' /> Update changes...
-          </Button>
-          <Button onClick={downloadPdf} color="green">
-            <Icon name='download' /> Download file
-          </Button>
-          <Divider/>
-          <Button onClick={() => exitPdfView()}>Back</Button>
-          <Button onClick={clear}>Import another story</Button>
+            <Menu.Menu position='right'>
+              <Menu.Item
+                as='div'
+                style={{ marginRight: 0, paddingRight: 0 }}
+                content={<Button circular color="green"><Icon name="sync" /> Shuffle sequences</Button>}
+                onClick={() => shuffleStory()}
+              />
+            </Menu.Menu>
+          </Menu>
+          <Divider style={{ margin: 0, marginBottom: -1 }} />
+          <div style={{ display: 'flex', flexGrow: 1, width: '100%' }}>
+            <Switch>
+              <Route exact path={`${props.match.path}`} component={PDFViews.Sequences} />
+              <Route path={`${props.match.path}/format`} component={PDFViews.Settings} />
+            </Switch>
+          </div>
+          <Divider style={{ margin: 0 }}/>
+          <div style={{ display: 'flex', padding: '.5em .8em' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', flexDirection: 'column', flexGrow: 1, marginRight: '.8em' }}>
+              <Button onClick={() => exitPdfView()}>Back</Button>
+              <Button style={{ marginBottom: 0 }} onClick={clear}>Import another story</Button>
+            </div>
+            <Button size="huge" style={{ marginBottom: 0 }} onClick={downloadPdf} color="green">
+              <Icon name='download' /> Download file
+            </Button>
+          </div>
         </div>
       </div>
       <div className="divided-panel" style={{ borderLeft: '2px rgb(79, 82, 85) solid'}}>
-        <iframe download="MyFilaname" title='generated PDF' style={{ boxShadow: 'none', border: 'none', width: '100%', height: '100%' }} src={iframeSrc} />
+        { generatingPdf && (
+          <div className="generator-loader-container">
+            <Loader inverted active={true} />
+          </div>
+        )}
+        <iframe title='generated PDF' style={{ boxShadow: 'none', border: 'none', width: '100%', height: '100%' }} src={iframeSrc} />
       </div>
     </div>
-  )
+  ) : <Loader active={true} />
 }
 
 const mapStateToProps = (state) => ({
   pending: state.story.exportPending,
   error: state.story.exportError,
   story: state.story.story,
+  pdfStory: state.pdf.simplifiedStory,
   pdfSettings: state.pdf.settings,
   showPdfView: state.pdf.showView
 })
 
 const mapDispatchToProps = (dispatch) => ({
-  updateSettings: bindActionCreators(pdfActions.updateSettings, dispatch),
   exportStory: bindActionCreators(storyActions.export, dispatch),
   clear: bindActionCreators(storyActions.clear, dispatch),
   exitPdfView: bindActionCreators(pdfActions.showView, dispatch),
-  resetDefault: bindActionCreators(pdfActions.resetDefault, dispatch),
+  initPdfStory: bindActionCreators(pdfActions.initPdf, dispatch),
+  shuffleStory: bindActionCreators(pdfActions.shuffleSequences, dispatch)
 })
+
 export default connect(mapStateToProps, mapDispatchToProps)(CreatePdf)
