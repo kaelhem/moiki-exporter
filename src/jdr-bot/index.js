@@ -95,6 +95,7 @@ export const convertToJdrBot = (story) => {
         This is a choice sequence
       */
       const nextRooms = []
+      let index = 1
       for (let choice of sequence.choices) {
         const nextId = getSequenceByIndex(choice.next)
         if (choice.condition && choice.condition.next && choice.condition.params) {
@@ -105,22 +106,25 @@ export const convertToJdrBot = (story) => {
               `997|null|${nextId}|null\n`
             ]
           })
-          thisRoom += `+n+&&\n${cleanContent(choice.content)} (${nextSpecialRoomId})`
+          thisRoom += `+n+&&\n${cleanContent(choice.content)} (${index})`
           nextRooms.push(nextSpecialRoomId)
           ++nextSpecialRoomId
         } else if (choice.action && choice.action.params && typeof choice.action.params === 'string') {
           const actionRoomId = addObjectRoom(variables[choice.action.params], nextId)
-          thisRoom += `+n+&&\n${cleanContent(choice.content)} (${actionRoomId})`
+          thisRoom += `+n+&&\n${cleanContent(choice.content)} (${index})`
           nextRooms.push(actionRoomId)
         } else {
-          thisRoom += `+n+&&\n${cleanContent(choice.content)} (${nextId})`
+          thisRoom += `+n+&&\n${cleanContent(choice.content)} (${index})`
           nextRooms.push(nextId)
         }
+        ++index
       }
       if (nextRooms.length > 0) {
         thisRoom += '\n|\n'
+        index = 1
         for (let next of nextRooms) {
-          thisRoom += next + '\n'
+          thisRoom += index + '->' + next + '\n'
+          ++index
         }
       }
     } else if (sequence.final || !sequence.next) {
