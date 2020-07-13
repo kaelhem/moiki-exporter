@@ -169,5 +169,5 @@ export const convertToJdrBot = (story) => {
     rooms.push({id, room})
   }
 
-  return meta.name + '\n' + rooms.length + '\n' + rooms.map(({room}) => room).join('\n')
+  return meta.name + '\n' + rooms.length + '\n' + rooms.map(({room}) => room).join('\n') + '\n1§1️⃣|2§2️⃣|3§3️⃣'
 }
