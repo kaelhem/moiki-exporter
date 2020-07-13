@@ -6,9 +6,9 @@ const cleanContent = content => (
   content
     .replace(/<\/p>/gi, '</p> ')
     .replace(/(<([/p]+)>)/gi, '')
-    .replace(/(<(strong|b)>\s)/gi, ' <b>')
-    .replace(/(\s<\/(strong|b)>)/gi, '</b> ')
-    .replace(/(<([/]*)(strong|b)>)/gi, "**")
+    .replace(/(<(strong|b|h\d)>\s)/gi, ' <b>')
+    .replace(/(\s<\/(strong|b|h\d)>)/gi, '</b> ')
+    .replace(/(<([/]*)(strong|b|h\d)>)/gi, "**")
     .replace(/(<em>\s)/gi, ' <em>')
     .replace(/(\s<\/em>)/gi, '</em> ')
     .replace(/(<([/]*)(em)>)/gi, '_')
