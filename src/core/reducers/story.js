@@ -57,7 +57,7 @@ export default function storyReducer(state = {}, action = {}) {
 }
 
 export const actions = {
-  import: (zip) => ({type: types.IMPORT, payload: zip}),
+  import: (file) => ({type: types.IMPORT, payload: file}),
   export: (format) => ({type: types.EXPORT, payload: format}),
   clear: () => ({type: types.CLEAR})
 }

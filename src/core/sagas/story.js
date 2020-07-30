@@ -16,6 +16,7 @@ import {
 
 const generatePngIcons = async (storyData) => {
   const parser = new DOMParser()
+  console.log(storyData.assets)
   for (let asset of storyData.assets) {
     try {
       const svgString = decodeURIComponent(asset.icon.replace(/data:image\/svg\+xml,/g, ''))
@@ -29,9 +30,9 @@ const generatePngIcons = async (storyData) => {
   }
 }
 
-export function *importSaga(action) {
+export function *importZip(zipData) {
   try {
-    const zip = yield JSZip.loadAsync(action.payload)
+    const zip = yield JSZip.loadAsync(zipData)
     let isJS = false
     let file = zip.file('story.json')
     if (!file) {
@@ -46,7 +47,50 @@ export function *importSaga(action) {
     yield generatePngIcons(data)
     yield put(storyMessages.importSuccess(data))
   } catch (e) {
+    console.log(e.message)
     yield put(storyMessages.importError('This file is not in the correct format!'))
+  }
+}
+
+export function *importJson(data) {
+  try {
+    yield generatePngIcons(data)
+    yield put(storyMessages.importSuccess(data))
+  } catch (e) {
+    console.log(e.message)
+    yield put(storyMessages.importError('This file is not in the correct format!'))
+  }
+}
+
+export function *importTwine(name, content) {
+  try {
+    const response = yield fetch('/.netlify/functions/import-from-twine', {
+      method: 'post',
+      body: JSON.stringify({name, content})
+    })
+    const story = yield response.json()
+    const blob = new Blob([JSON.stringify(story, null, 4)], {type: 'text/plain;charset=utf-8'})
+    saveAs(blob, 'twine-import.json')
+  } catch (e) {
+    console.log(e)
+    yield put(storyMessages.exportError('Oops, there is a bug :-('))
+  }
+}
+
+export function *importSaga(action) {
+  const {ext, name, content} = action.payload
+  switch (ext) {
+    case 'zip':
+      yield *importZip(content)
+    break
+    case 'json':
+      yield *importJson(JSON.parse(content))
+    break
+    case 'html':
+      yield *importTwine(name, content)
+    break
+    default:
+      yield put(storyMessages.importError('This file is not in the correct format!'))
   }
 }
 

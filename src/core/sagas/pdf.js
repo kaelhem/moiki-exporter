@@ -23,15 +23,20 @@ const shuffleSequences = (sequences) => {
 }
 
 export function *initPdfSaga(action) {
-  const story = yield select(storySelectors.story)
-  const { meta, assets } = story
-  let variables = {}
-  for (let asset of assets) {
-    variables[asset.id] = asset
+  try {
+    const story = yield select(storySelectors.story)
+    const { meta, assets } = story
+    let variables = {}
+    for (let asset of assets) {
+      variables[asset.id] = asset
+    }
+    const sequences = simplifyStory(clonedeep(story), variables, cleanContent)
+    const sequencesShuffle = shuffleSequences(sequences)
+    yield put(pdfActions.updateStory({meta, variables, sequences, sequencesShuffle}))
+  } catch(e) {
+    console.log(e)
+    yield put(pdfActions.showView(false))
   }
-  const sequences = simplifyStory(clonedeep(story), variables, cleanContent)
-  const sequencesShuffle = shuffleSequences(sequences)
-  yield put(pdfActions.updateStory({meta, variables, sequences, sequencesShuffle}))
 }
 
 export function *shuffleSaga(action) {
