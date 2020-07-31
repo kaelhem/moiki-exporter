@@ -20,7 +20,7 @@ const cleanText = (txt) => {
   return cleaned
 }
 
-export function handler(event, data) {
+export async function handler(event, data) {
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 500,
