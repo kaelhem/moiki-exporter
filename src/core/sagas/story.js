@@ -1,6 +1,7 @@
 import { all, fork, takeEvery, put, select } from 'redux-saga/effects'
 import {
   types as storyTypes,
+  actions as storyActions,
   messages as storyMessages,
   selectors as storySelectors
 } from 'core/reducers/story'
@@ -71,6 +72,7 @@ export function *importTwine(name, content) {
     const story = yield response.json()
     const blob = new Blob([JSON.stringify(story, null, 4)], {type: 'text/plain;charset=utf-8'})
     saveAs(blob, 'twine-import.json')
+    yield put(storyActions.clear())
   } catch (e) {
     console.log(e)
     yield put(storyMessages.exportError('Oops, there is a bug :-('))

@@ -48,6 +48,7 @@ export default function storyReducer(state = {}, action = {}) {
         exportError: action.payload
       }
     }
+    case 'persist/REHYDRATE':
     case types.CLEAR: {
       return initialState
     }

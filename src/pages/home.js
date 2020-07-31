@@ -4,11 +4,12 @@ import { bindActionCreators } from 'redux'
 import { connect } from 'react-redux'
 import { actions as storyActions } from 'core/reducers/story'
 import Dropzone from 'components/dropzone'
-import { Segment, Divider } from 'semantic-ui-react'
+import { Segment, Divider, Loader } from 'semantic-ui-react'
 
 const Home = (props) => {
   const {
     error,
+    pending,
     importStory,
     story
   } = props
@@ -26,10 +27,16 @@ const Home = (props) => {
         <p>This tool allows you to export stories made with <a href="https://moiki.fr" target="_blank" rel="noopener noreferrer">Moiki</a> in different formats.</p>
         <a href="https://github.com/kaelhem/moiki-exporter" target="_blank" rel="noopener noreferrer"><em>Learn more about it</em></a>
         <Divider />
-        <Dropzone
-          onDataLoaded={ importStory }
-          content={<p>Drop your story as <em>.zip</em> here</p>}
-        />
+        { pending ? (
+          <div style={{ margin: '3em auto', padding: '1em', height: 200, display: 'flex', alignItems: 'center', fontSize: '1.5em' }}>
+            <Loader active={true} />
+          </div>
+        ) : (
+          <Dropzone
+            onDataLoaded={ importStory }
+            content={<p>Drop your story as <em>.zip</em> here</p>}
+          />
+        )}
       </div>
     </Fragment>
   )
@@ -37,7 +44,8 @@ const Home = (props) => {
 
 const mapStateToProps = (state) => ({
   error: state.story.error,
-  story: state.story.story
+  story: state.story.story,
+  pending: state.story.pending
 })
 
 const mapDispatchToProps = (dispatch) => ({
