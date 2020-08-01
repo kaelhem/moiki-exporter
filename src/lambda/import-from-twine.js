@@ -8,6 +8,7 @@ const cleanText = (txt) => {
     .replace(/<img([^>]+)>/gim, '')
     .replace(/<<button([^<]+)<<\/button>>/gim, '')
     .replace(/<<set([^>]+)>>/gim, '')
+    .replace(/\[\[([^\]]+)\]\]/gim, '')
     .trim()
     
   const styles = cleaned.match(/@@([^@]+)@@/gim)
