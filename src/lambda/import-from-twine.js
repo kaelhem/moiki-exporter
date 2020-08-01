@@ -35,6 +35,10 @@ export async function handler(event, data) {
       body: JSON.stringify({ msg: 'Body was empty.'})
     }
   }
+  const regexp = new RegExp('startnode\=\"([^\"]+)\"', 'gmi')
+  const extracter = regexp.exec(jsonBody.content)
+  const startNode = extracter && extracter.length > 1 ? extracter[1] : null
+
   try {
     const twine = parseHTML(jsonBody.content)
     const excludedPassages = [
@@ -44,6 +48,8 @@ export async function handler(event, data) {
     ]
     const passages = twine.passages.filter(x => excludedPassages.indexOf(x.name) === -1)
     const title = twine.passages.filter(x => x.name === 'StorySubtitle').map(x => x.text)
+    const extractStartSequenceIds = startNode ? twine.passages.filter(x => x.pid.toString() === startNode).map(x => kebabCase(x.name)) : null
+    const startSequence = extractStartSequenceIds && extractStartSequenceIds.length > 0 ? extractStartSequenceIds[0] : null
     const moikiStory = {
       meta: {
         name: jsonBody.name || 'Twine import',
@@ -62,7 +68,7 @@ export async function handler(event, data) {
     }))
     return {
       statusCode: 200,
-      body: JSON.stringify({...moikiStory, firstSequence: moikiStory.sequences[0].id})
+      body: JSON.stringify({...moikiStory, firstSequence: startSequence || moikiStory.sequences[0].id})
     }
   } catch(e) {
     return {
