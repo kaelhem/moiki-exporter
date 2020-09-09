@@ -11,9 +11,12 @@ import JSZip from 'jszip'
 import { svgAsPngUri } from 'save-svg-as-png'
 import {
   convertToInk,
+  convertToInform,
   convertToTwee,
   convertToJdrBot
 } from 'moiki-exporter'
+
+import windows1252 from 'windows-1252'
 
 const generatePngIcons = async (storyData) => {
   const parser = new DOMParser()
@@ -101,6 +104,7 @@ const getFormatManager = (format) => {
     case 'harlowe' : return { converter: s => convertToTwee(s, 'harlowe'), ext: 'twee' }
     case 'sugarcube' : return { converter: s => convertToTwee(s, 'sugarcube'), ext: 'twee' }
     case 'ink' : return { converter: convertToInk, ext: 'ink' }
+    case 'inform6' : return { converter: s => windows1252.encode(convertToInform(s)), ext: 'inf', asZip: true, asBinary: true }
     case 'jdrbot' : return { converter: convertToJdrBot, ext: 'txt' }
     default:
       throw new Error('format invalid')
@@ -110,11 +114,12 @@ const getFormatManager = (format) => {
 export function *exportSaga(action) {
   const story = yield select(storySelectors.story)
   try {
-    const { ext, converter, asZip=false } = getFormatManager(action.payload)
+    const { ext, converter, asZip=false, asBinary=false } = getFormatManager(action.payload)
     const filename = kebabCase(story.meta.name)
     if (asZip) {
       const zip = new JSZip()
-      zip.file(filename + '.' + ext, converter(story))
+      const opts = asBinary ? {binary: true} : null
+      zip.file(filename + '.' + ext, converter(story), opts)
       const blob = yield zip.generateAsync({type: 'blob'})
       saveAs(blob, filename + '.zip')
     } else {
