@@ -4,7 +4,6 @@ All this stuff was made possible with the help of @batteman and the fiction-inte
 
 import kebabCase from 'lodash.kebabcase'
 import { getHeader, getAuthor } from '../utils'
-export { version } from '../../package.json'
 
 const convertId = id => id.replace(/-/gi, '_')
 const cleanContent = (content) => {
@@ -98,7 +97,7 @@ export const convertToInform = (story) => {
 ! title: ${meta.name}
 
 Constant Story "${meta.name}";
-Constant Headline "^${meta.description}^^Une histoire de ${getAuthor(meta)}.^^Cette histoire à été exporté avec Moiki Exporter v.${version}^La version originelle est accessible ici : https://moiki.fr/story/${_id}^";
+Constant Headline "^${meta.description}^^Une histoire de ${getAuthor(meta)}.^^Cette histoire à été exporté avec Moiki Exporter.^La version originelle est accessible ici : https://moiki.fr/story/${_id}^";
 Release 1;
 
 Include "parser";
