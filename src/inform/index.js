@@ -94,7 +94,7 @@ export const convertToInform = (story) => {
 ! title: ${meta.name}
 
 Constant Story "${meta.name}";
-Constant Headline "^${meta.description}^^Une histoire de ${getAuthor(meta)}.^^Cette histoire à été exporté avec Moiki Exporter.^La version originelle est accessible ici : https://moiki.fr/story/${_id}^";
+Constant Headline "^${meta.description}^^Une histoire de ${getAuthor(meta)}.^^Cette histoire a été exportée avec Moiki Exporter.^La version originelle est accessible ici : https://moiki.fr/story/${_id}^";
 Release 1;
 
 Constant NO_SCORE;
@@ -103,7 +103,6 @@ Include "parser";
 
 ! Add a prefix to every commands to shortcut the lib. credit: @hlabrande
 [ BeforeParsing pos ;
-  print "";
   #Ifdef TARGET_ZCODE;
     pos = parse->5;
   #Ifnot; ! TARGET_GLULX
