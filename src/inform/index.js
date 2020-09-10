@@ -23,24 +23,22 @@ const cleanContent = (content) => {
     .trim()
 }
 
+const directions = ['w', 's', 'e', 'n', 'nw', 'ne', 'sw', 'se']
+
 const getChoiceGotoFunctionFromIndex = (index) => {
-  switch (index) {
-    case 0: return 'w_to'
-    case 1: return 's_to'
-    case 2: return 'e_to'
-    case 3: return 'n_to'
-    default: throw new Error('Only 4 choices are allowed here...')
+  if (index >= 0 && index < 10) {
+    return directions[index] + '_to'
   }
+  throw new Error('Only 8 choices are allowed here...')
 }
 
 const getChoiceLinkValue = (choice, variables) => {
   if (choice.action && choice.action.params && typeof choice.action.params === 'string') {
-    // TODO manage case where object is lost
-    return `[; ${variables[choice.action.params].identifier}=true; print "${variables[choice.action.params].desc}^"; PlayerTo(${convertId(choice.next)}); rtrue;]`
+    return `[; ClearScreen(); ${variables[choice.action.params].identifier}=inverse(${variables[choice.action.params].identifier}); style bold; addOrRemoveObject(${variables[choice.action.params].identifier}); print "${cleanContent(variables[choice.action.params].desc)}"; style roman; attend(); PlayerTo(${convertId(choice.next)}); rtrue;]`
   } else if (choice.condition && choice.condition.next && choice.condition.params) {
-    return `[; if (${variables[choice.condition.params].identifier}) PlayerTo(${convertId(choice.condition.next)}); else PlayerTo(${convertId(choice.next)}); rtrue;]`
+    return `[; ClearScreen(); if (${variables[choice.condition.params].identifier}) PlayerTo(${convertId(choice.condition.next)}); else PlayerTo(${convertId(choice.next)}); rtrue;]`
   } else {
-    return convertId(choice.next)
+    return `[; ClearScreen(); PlayerTo(${convertId(choice.next)}); rtrue;]`
   }
 }
 
@@ -49,12 +47,11 @@ const getNodeDescription = (sequence, variables) => {
   if (sequence.next && (!sequence.choices || sequence.choices.length === 0)) {
     // simple sequence
     if (sequence.action && sequence.action.params && typeof sequence.action.params === 'string') {
-      // TODO manage case where object is lost
-      return `[; ${variables[sequence.action.params].identifier}=true; print "${variables[sequence.action.params].desc}^"; PlayerTo(${convertId(sequence.next)}); rtrue;];\n`
+      return `[; print "${text}^^"; ${variables[sequence.action.params].identifier}=inverse(${variables[sequence.action.params].identifier}); style bold; addOrRemoveObject(${variables[sequence.action.params].identifier}); print "${cleanContent(variables[sequence.action.params].desc)}"; style roman; attend(); PlayerTo(${convertId(sequence.next)});];\n`
     } else if (sequence.condition && sequence.condition.next && sequence.condition.params) {
-      return `[; print "${text}^"; if (${variables[sequence.condition.params].identifier}) PlayerTo(${convertId(sequence.condition.next)}); else PlayerTo(${convertId(sequence.next)});];\n`
+      return `[; print "${text}"; if (${variables[sequence.condition.params].identifier}) PlayerTo(${convertId(sequence.condition.next)}); else PlayerTo(${convertId(sequence.next)});];\n`
     }
-    return `[; print "${text}^"; PlayerTo(${convertId(sequence.next)});];\n`
+    return `[; print "${text}"; PlayerTo(${convertId(sequence.next)});];\n`
   } else if (sequence.choices && sequence.choices.length > 0) {
     // choice sequence
     let choicesDescription = ''
@@ -100,10 +97,13 @@ Constant Story "${meta.name}";
 Constant Headline "^${meta.description}^^Une histoire de ${getAuthor(meta)}.^^Cette histoire à été exporté avec Moiki Exporter.^La version originelle est accessible ici : https://moiki.fr/story/${_id}^";
 Release 1;
 
+Constant NO_SCORE;
+
 Include "parser";
 
 ! Add a prefix to every commands to shortcut the lib. credit: @hlabrande
 [ BeforeParsing pos ;
+  print "";
   #Ifdef TARGET_ZCODE;
     pos = parse->5;
   #Ifnot; ! TARGET_GLULX
@@ -116,7 +116,6 @@ Include "parser";
   LTI_Insert(pos+4, 'x');
   LTI_Insert(pos+5, ' ');
   Tokenise__(buffer, parse);
-
 ];
 
 Include "verblib";
@@ -125,6 +124,15 @@ Include "verblib";
 [ attend notNeeded;
   @read_char 1 notNeeded;
   rtrue;
+];
+
+[ addOrRemoveObject obj;
+  if (obj) print "Objet récupéré : "; else print "Objet perdu : ";
+  rtrue;
+];
+
+[ inverse obj;
+  if (obj) return false; else return true;
 ];
 `
 
@@ -186,10 +194,7 @@ result += `
 Include "FrenchG";
 
 [ ChoixNumberSub ;
-  if (noun == 1) <<Go w_obj>>;
-  if (noun == 2) <<Go s_obj>>;
-  if (noun == 3) <<Go e_obj>>;
-  if (noun == 4) <<Go n_obj>>;
+  ${directions.map((d, idx) => (`if (noun == ${idx + 1}) <<Go ${d}_obj>>;`)).join('\n  ')}
   print "Choix non reconnu, veuillez recommencer.^";
 ];
 
