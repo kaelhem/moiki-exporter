@@ -16,10 +16,10 @@ const cleanContent = (content) => {
     .replace(/<\/*p>/gi, '')
     .replace(/(<\/*(span)>)/gi, '')
     .replace(/(\s)+/gi, ' ')
+    .replace(/\^/gim, '@@94')
     .replace(/\s*<br\s*\/*>(\s|&nbsp;)*/gi, '^')
     .replace(/(\s)*&nbsp;(\s)*/gi, ' ') // maybe: [unicode 160] ?
     .replace(/(\"|“|”)/gim, '~')
-    .replace(/\^/gim, '@@94')
     .trim()
 }
 
@@ -34,7 +34,7 @@ const getChoiceGotoFunctionFromIndex = (index) => {
 
 const getChoiceLinkValue = (choice, variables) => {
   if (choice.action && choice.action.params && typeof choice.action.params === 'string') {
-    return `[; ClearScreen(); ${variables[choice.action.params].identifier}=inverse(${variables[choice.action.params].identifier}); style bold; addOrRemoveObject(${variables[choice.action.params].identifier}); print "${cleanContent(variables[choice.action.params].desc)}"; style roman; attend(); PlayerTo(${convertId(choice.next)}); rtrue;]`
+    return `[; ClearScreen(); ${variables[choice.action.params].identifier}=inverse(${variables[choice.action.params].identifier}); style bold; addOrRemoveObject(${variables[choice.action.params].identifier}); print "${cleanContent(variables[choice.action.params].desc)}"; style roman; KeyCharPrimitive(); PlayerTo(${convertId(choice.next)}); rtrue;]`
   } else if (choice.condition && choice.condition.next && choice.condition.params) {
     return `[; ClearScreen(); if (${variables[choice.condition.params].identifier}) PlayerTo(${convertId(choice.condition.next)}); else PlayerTo(${convertId(choice.next)}); rtrue;]`
   } else {
@@ -47,7 +47,7 @@ const getNodeDescription = (sequence, variables) => {
   if (sequence.next && (!sequence.choices || sequence.choices.length === 0)) {
     // simple sequence
     if (sequence.action && sequence.action.params && typeof sequence.action.params === 'string') {
-      return `[; print "${text}^^"; ${variables[sequence.action.params].identifier}=inverse(${variables[sequence.action.params].identifier}); style bold; addOrRemoveObject(${variables[sequence.action.params].identifier}); print "${cleanContent(variables[sequence.action.params].desc)}"; style roman; attend(); PlayerTo(${convertId(sequence.next)});];\n`
+      return `[; print "${text}^^"; ${variables[sequence.action.params].identifier}=inverse(${variables[sequence.action.params].identifier}); style bold; addOrRemoveObject(${variables[sequence.action.params].identifier}); print "${cleanContent(variables[sequence.action.params].desc)}"; style roman; KeyCharPrimitive(); PlayerTo(${convertId(sequence.next)});];\n`
     } else if (sequence.condition && sequence.condition.next && sequence.condition.params) {
       return `[; print "${text}"; if (${variables[sequence.condition.params].identifier}) PlayerTo(${convertId(sequence.condition.next)}); else PlayerTo(${convertId(sequence.next)});];\n`
     }
@@ -87,6 +87,7 @@ export const convertToInform = (story) => {
   const varsAsArray = Object.entries(variables).map(([_, data]) => data)
 
   let result = `!% !-s
+!% $OMIT_UNUSED_ROUTINES=1
 
 ! ${getHeader(_id).split('\n').join('\n! ')}
 
@@ -102,7 +103,7 @@ Constant NO_SCORE;
 Include "parser";
 
 ! Add a prefix to every commands to shortcut the lib. credit: @hlabrande
-[ BeforeParsing pos ;
+[ BeforeParsing pos;
   #Ifdef TARGET_ZCODE;
     pos = parse->5;
   #Ifnot; ! TARGET_GLULX
@@ -119,19 +120,13 @@ Include "parser";
 
 Include "verblib";
 
-! Wait for player to press a key. credit: @FibreTigre.
-[ attend notNeeded;
-  @read_char 1 notNeeded;
-  rtrue;
-];
-
 [ addOrRemoveObject obj;
   if (obj) print "Objet récupéré : "; else print "Objet perdu : ";
   rtrue;
 ];
 
 [ inverse obj;
-  if (obj) return false; else return true;
+  if (obj) rfalse; else rtrue;
 ];
 `
 
@@ -148,7 +143,8 @@ result += `
 ! ------------------------------------------
 
 Class sequence
-  with cant_go [; print "Choix non reconnu, veuillez recommencer.^"; <<Look>>; ];
+  with cant_go [; print "Choix non reconnu, veuillez recommencer.^"; <<Look>>; ],
+  has light;
 
 `
 
@@ -156,6 +152,7 @@ Class sequence
     result += `
 Sequence ${convertId(sequence.id)} ""
 with name "${convertId(sequence.id)}",
+  short_name [; rtrue;],
   description ${getNodeDescription(sequence, variables)}
 `
 }
@@ -167,16 +164,17 @@ result += `
 
 [ Initialise;
   location = ${convertId(firstSequence)};
-  give player light;
   introduction();
   lookmode=2; ! les lieux déjà visités sont décrits à chaque fois
-  return;
+  Banner();
+  KeyCharPrimitive();
+  ClearScreen();
+  return 2; ! banniËre dÈj‡ affichÈe
 ];
 
 [ introduction;
   style underline;
   print "Ce jeu ne se joue qu'en tapant les chiffres de vos choix.^De ce fait, vous ne pourrez ni sauver ni quitter de manière classique.^^";
-  attend();
 ];
 
 [ DeathMessage;
