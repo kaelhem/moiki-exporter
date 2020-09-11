@@ -143,9 +143,9 @@ result += `
 ! ------------------------------------------
 
 Class sequence
-  with cant_go [; print "Choix non reconnu, veuillez recommencer.^"; <<Look>>; ],
-  has light;
-
+  with short_name [; rtrue; ],
+    cant_go [; print "Choix non reconnu, veuillez recommencer.^"; <<Look>>; ],
+    has light;
 `
 
   for (let sequence of sequences) {   
