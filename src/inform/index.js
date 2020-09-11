@@ -151,9 +151,7 @@ Class sequence
   for (let sequence of sequences) {   
     result += `
 Sequence ${convertId(sequence.id)} ""
-with name "${convertId(sequence.id)}",
-  short_name [; rtrue;],
-  description ${getNodeDescription(sequence, variables)}
+with description ${getNodeDescription(sequence, variables)}
 `
 }
 
