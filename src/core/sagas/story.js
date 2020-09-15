@@ -104,7 +104,7 @@ const getFormatManager = (format) => {
     case 'harlowe' : return { converter: s => convertToTwee(s, 'harlowe'), ext: 'twee' }
     case 'sugarcube' : return { converter: s => convertToTwee(s, 'sugarcube'), ext: 'twee' }
     case 'ink' : return { converter: convertToInk, ext: 'ink' }
-    case 'inform6' : return { converter: s => windows1252.encode(convertToInform(s)), ext: 'inf', asZip: true, asBinary: true }
+    case 'inform6' : return { converter: s => windows1252.encode(convertToInform(s, 'standard')), ext: 'inf', asZip: true, asBinary: true }
     case 'jdrbot' : return { converter: convertToJdrBot, ext: 'txt' }
     default:
       throw new Error('format invalid')
