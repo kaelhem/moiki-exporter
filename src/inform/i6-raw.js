@@ -1,5 +1,9 @@
 /**
-Thi export will not use any extra library, just Inform.
+This export will not use any extra library, just Inform.
+
+TODO: 
+* extract locales
+* add undo feature
 */
 
 import kebabCase from 'lodash.kebabcase'
@@ -241,25 +245,23 @@ Array key -> 13;
   return ok;
 ];
 
-
-! Game utils
-! -------------------------------------------
-
-! fix: in z-code v3, it seems there is no way to clear the screen...
-#IfV3;
-  [ cls;
+[ cls;
+  #IfV3;
+    ! in v3 it seems there is no way to clear the screen...
     print "----------------------------------------^";
-    rtrue;
-  ];
-#Ifnot;
-  [ cls;
-    @erase_window -1;
-    rtrue;
-  ];
-#EndIf;
+  #Ifnot;
+    @erase_window -1; ! this opcode is not available in V3
+  #EndIf;
+  rtrue;
+];
 
-[ wait;
-  read key 0;
+[ wait x;
+  #IfV3;
+    read key 0;
+  #Ifnot;
+    @read_char 1 x; ! this opcode is not available in V3
+    print "^";
+  #EndIf;
 ];
 
 `
