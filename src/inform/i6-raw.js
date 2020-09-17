@@ -271,14 +271,14 @@ Array key -> 13;
     } else if (isCommand(STR_CMD_UNDO)) {
       undo();
     } else if (isCommand(STR_CMD_REDO)) {
-      if (redo()) return;
+      if (redo()) return 0;
     } else if (isCommand(STR_CMD_EXIT)) {
       exit();
     } else if (isCommand(STR_CMD_LIST)) {
       inventory();
     } else if (isCommand(STR_CMD_SHOW)) {
       markForShow = 1;
-      return;
+      return 0;
     } else {
       commandUnknown = true;
     }
