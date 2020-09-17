@@ -104,7 +104,7 @@ const getFormatManager = (format) => {
     case 'harlowe' : return { converter: s => convertToTwee(s, 'harlowe'), ext: 'twee' }
     case 'sugarcube' : return { converter: s => convertToTwee(s, 'sugarcube'), ext: 'twee' }
     case 'ink' : return { converter: convertToInk, ext: 'ink' }
-    case 'inform6' : return { converter: s => windows1252.encode(convertToInform(s, 'standard')), ext: 'inf', asZip: true, asBinary: true }
+    case 'inform6' : return { converter: s => convertToInform(s, 'standard'), asZip: true }
     case 'jdrbot' : return { converter: convertToJdrBot, ext: 'txt' }
     default:
       throw new Error('format invalid')
@@ -114,12 +114,18 @@ const getFormatManager = (format) => {
 export function *exportSaga(action) {
   const story = yield select(storySelectors.story)
   try {
-    const { ext, converter, asZip=false, asBinary=false } = getFormatManager(action.payload)
+    const { ext, converter, asZip=false } = getFormatManager(action.payload)
+    const files = converter(story)
     const filename = kebabCase(story.meta.name)
     if (asZip) {
       const zip = new JSZip()
-      const opts = asBinary ? {binary: true} : null
-      zip.file(filename + '.' + ext, converter(story), opts)
+      for (let f of files) {
+        if (f.asBinary) {
+          zip.file(f.filename, windows1252.encode(f.data), {binary: true})
+        } else {
+          zip.file(f.filename, f.data)
+        }
+      }
       const blob = yield zip.generateAsync({type: 'blob'})
       saveAs(blob, filename + '.zip')
     } else {
