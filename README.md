@@ -16,6 +16,12 @@ Well known formats:
 Others formats are also available:
 + **JDR-Bot** - [JDR-Bot](https://github.com/Cyril-Fiesta/jdr-bot) is a french discord bot that allows teams to play _roleplay games_. This export will allows you to transform your _Moiki_ story in a scenario for this bot.
 
+![](https://raw.githubusercontent.com/kaelhem/moiki-exporter/website/public/screenshots/export-home.png)
+_Several formats available!_
+
+![](https://raw.githubusercontent.com/kaelhem/moiki-exporter/website/public/screenshots/export-pdf.png)
+_Transform your story in CYOA interactive book!_
+
 ## Howto
 
 Export your story made on Moiki as JSON format ([documentation](https://moiki.fr/documentation/export) - *french only*) and drag the downloaded _.zip_ file on [Moiki-Exporter website](https://moiki-exporter.netlify.app/). Then you can choose the export format that you want.
