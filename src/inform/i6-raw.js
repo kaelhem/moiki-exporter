@@ -2,16 +2,18 @@
 This export will not use any extra library, just Inform.
 
 TODO: 
-* extract locales
 * add undo feature
 */
 
 import kebabCase from 'lodash.kebabcase'
 import { getHeader, getAuthor } from '../utils'
-import { convertId, cleanContent } from './i6-utils'
+import * as informUtils from './i6-utils'
 
 export const convertToI6Raw = (story) => {
   const { _id, meta, firstSequence, sequences, assets } = story
+  const { convertId, cleanContent } = informUtils
+  const STRINGS = informUtils.DEFAULT_STRINGS_FR
+  const config = informUtils.informDefaultConfig
 
   const writeStyle = (style, tabs=1) => `#IfV5; style ${style}; #EndIf;\n${'  '.repeat(tabs)}`
   const bold = (tabs) => writeStyle('bold', tabs)
@@ -20,9 +22,9 @@ export const convertToI6Raw = (story) => {
   const roman = (tabs) => writeStyle('roman', tabs)
 
   let variables = {}
-  for (let asset of assets) {
+  for (const [idx, asset] of assets.entries()) {
     variables[asset.id] = {
-      identifier: '_' + convertId(kebabCase(asset.label)),
+      identifier: '_' + convertId(kebabCase(asset.label), '') + '_' + (idx + 1),
       ...asset
     }
   }
@@ -33,16 +35,15 @@ export const convertToI6Raw = (story) => {
     if (choice.action && choice.action.params && typeof choice.action.params === 'string') {
       return [
         `cls();`,
-        `${variables[choice.action.params].identifier} = inverse(${variables[choice.action.params].identifier});`,
-        `${ bold() }addOrRemoveObject(${variables[choice.action.params].identifier});`,
+        `${ bold(2) }toggleItem(${variables[choice.action.params].identifier});`,
         `print "${cleanContent(variables[choice.action.params].desc)}";`,
-        `${ roman() }wait();`,
+        `${ roman(2) }wait();`,
         `return ${convertId(choice.next)};`
       ]
     } else if (choice.condition && choice.condition.next && choice.condition.params) {
       return [
         `cls();`,
-        `if (${variables[choice.condition.params].identifier}) return ${convertId(choice.condition.next)};`,
+        `if (hasItem(${variables[choice.condition.params].identifier})) return ${convertId(choice.condition.next)};`,
         `return ${convertId(choice.next)};`
       ]
     } else {
@@ -62,8 +63,7 @@ export const convertToI6Raw = (story) => {
       if (sequence.action && sequence.action.params && typeof sequence.action.params === 'string') {
         statements = [
           `print "${text}^^";`,
-          `${variables[sequence.action.params].identifier} = inverse(${variables[sequence.action.params].identifier});`,
-          `${ bold() }addOrRemoveObject(${variables[sequence.action.params].identifier});`,
+          `${ bold() }toggleItem(${variables[sequence.action.params].identifier});`,
           `print "${cleanContent(variables[sequence.action.params].desc)}";`,
           `${ roman() }wait();`,
           `return ${convertId(sequence.next)};`
@@ -72,7 +72,7 @@ export const convertToI6Raw = (story) => {
         statements = [
           `print "${text}";`,
           `wait();`,
-          `if (${variables[sequence.condition.params].identifier}) return ${convertId(sequence.condition.next)};`,
+          `if (hasItem(${variables[sequence.condition.params].identifier})) return ${convertId(sequence.condition.next)};`,
           `return ${convertId(sequence.next)};`
         ]
       } else {
@@ -114,21 +114,27 @@ export const convertToI6Raw = (story) => {
     }
   }
 
-  let result = `!% !-s
-!% $OMIT_UNUSED_ROUTINES=1
+  // this helper method allows to construct the conditions checking user input (to match commands)
+  const getInputConditionFor = (str, lenVarName='len') => {
+    const matchChars = str.toLowerCase().split('').map((c, i) => {
+      const thisKey = i === 0 ? `key->inputBufferStartIndex` : `key->(inputBufferStartIndex+${i})`
+      return `${thisKey} == '${c}'`
+    }).join(' && ')
+    return `if (${lenVarName} == ${str.length} && ${matchChars}) {`
+  }
 
-! ${getHeader(_id).split('\n').join('\n! ')}
+  const moikiInformLibrary = `! This file contains the necessary core for the Moiki export to Inform6
+! kaelhem (c) 2020
+! kaelhem at gmail com
 
-! author: ${getAuthor(meta)}
-! title: ${meta.name}
 
 ! Inform settings
 ! -------------------------------------------
 
-Object DefaultRoomStoryForStatusBar "${meta.name}"; ! used to force name in status line
-Global location = DefaultRoomStoryForStatusBar; ! Must be the first global to show location name
+Global location = DefaultRoomForStatusBar; ! Must be the first global to show location name
 Global status_field_1 = 0; ! Must be the second global to show score or hours
 Global status_field_2 = 0; ! Must be the third global to show turns or minutes
+
 
 ! Variables for game management
 ! -------------------------------------------
@@ -136,6 +142,58 @@ Global status_field_2 = 0; ! Must be the third global to show turns or minutes
 Global markForRedo = 0; ! used to restart game from beginning
 Global markForShow = 0; ! used to re-display sequence text
 Global gameOver = 0;
+
+
+! Items management
+! -------------------------------------------
+
+#IfV3;
+  Array userItems->(2+COUNT_TOTAL_ITEMS);
+#IfNot;
+  Array userItems->(3+COUNT_TOTAL_ITEMS);
+#EndIf;
+
+[ clearItems i;
+  for (i=1: i<=userItems->0: i++) {
+    userItems->i = 0;
+  }
+  return;
+];
+
+[ addItem index;
+  userItems->index = 1;
+  return;
+];
+
+[ removeItem index;
+  userItems->index = 0;
+  return;
+];
+
+[ hasItem index;
+  return userItems->index == 1;
+];
+
+[ toggleItem index;
+  if (userItems->index == 0) {
+    userItems->index = 1;
+    ++status_field_1;
+    print (string) STR_OBJECT_WON;
+  } else {
+    userItems->index = 0;
+    --status_field_1;
+    print (string) STR_OBJECT_LOST;
+  }
+  return;
+];
+
+[ countItems i count;
+  count = 0;
+  for (i=1: i<=COUNT_TOTAL_ITEMS: i++) {
+    if (userItems->i == 1) ++count;
+  }
+  return count;
+];
 
 ! Manage user inputs
 ! -------------------------------------------
@@ -162,7 +220,32 @@ Global gameOver = 0;
   return buffer;
 ];
 
-! To store user input
+! convert a string into array
+[ toArray str arr;
+  @output_stream 3 arr;
+  @print_paddr str;
+  @output_stream -3;
+  return arr;
+];
+
+! take a char and return the same in lower case
+[ toLowerCase c;
+  if (c >= 'A' && c <= 'Z') return c + 32; else return c;
+];
+
+! return true if the given command as string match the current input buffer
+[isCommand cmd aCmd i;
+  aCmd = toArray(cmd);
+  if (aCmd-->0 == length(key)) {
+    for (i=0: i<aCmd-->0: i++) {
+      if (key->(inputBufferStartIndex+i) ~= toLowerCase(aCmd->(2+i))) rfalse;
+    }
+    rtrue;
+  }
+  rfalse;
+];
+
+! store user input
 Array key -> 13;
 
 ! read user choices / menu commands
@@ -174,43 +257,39 @@ Array key -> 13;
       print "> ";
     } until(KeyLine(key)-->0);
     len = length(key);
-    if (len == 4) {
-      if (key->inputBufferStartIndex == 'h' && key->(inputBufferStartIndex+1) == 'e' && key->(inputBufferStartIndex+2) == 'l' && key->(inputBufferStartIndex+3) == 'p') {
-        showHelp();
-      } else if (key->inputBufferStartIndex == 'u' && key->(inputBufferStartIndex+1) == 'n' && key->(inputBufferStartIndex+2) == 'd' && key->(inputBufferStartIndex+3) == 'o') {
-        undo();
-      } else if (key->inputBufferStartIndex == 'r' && key->(inputBufferStartIndex+1) == 'e' && key->(inputBufferStartIndex+2) == 'd' && key->(inputBufferStartIndex+3) == 'o') {
-        if (redo()) return;
-      } else if (key->inputBufferStartIndex == 'e' && key->(inputBufferStartIndex+1) == 'x' && key->(inputBufferStartIndex+2) == 'i' && key->(inputBufferStartIndex+3) == 't') {
-        exit();
-      } else if (key->inputBufferStartIndex == 'l' && key->(inputBufferStartIndex+1) == 'i' && key->(inputBufferStartIndex+2) == 's' && key->(inputBufferStartIndex+3) == 't') {
-        inventory();
-      } else if (key->inputBufferStartIndex == 's' && key->(inputBufferStartIndex+1) == 'h' && key->(inputBufferStartIndex+2) == 'o' && key->(inputBufferStartIndex+3) == 'w') {
-        markForShow = 1;
-        return;
-      } else {
-        commandUnknown = true;
-      }
-    } else if (len == 1) {
+    if (len == 1) {
       chNum = key->inputBufferStartIndex - 48;
       if (chNum > 0 && chNum <= numChoices) {
         done = true;
       } else if (chNum > 0 && chNum <= 10) {
-        print "Cette saisie ne correspond à aucun choix !^";
+        print (string) STR_NOCHOICE_MATCH, "^";
       } else {
         commandUnknown = true;
       }
+    } else if (isCommand(STR_CMD_HELP)) {
+      showHelp();
+    } else if (isCommand(STR_CMD_UNDO)) {
+      undo();
+    } else if (isCommand(STR_CMD_REDO)) {
+      if (redo()) return;
+    } else if (isCommand(STR_CMD_EXIT)) {
+      exit();
+    } else if (isCommand(STR_CMD_LIST)) {
+      inventory();
+    } else if (isCommand(STR_CMD_SHOW)) {
+      markForShow = 1;
+      return;
     } else {
       commandUnknown = true;
     }
     if (commandUnknown) {
-      print "Cette commande est inconnue ! Tapez ~HELP~ pour une liste des commandes disponibles.^";
+      print (string) STR_COMMAND_UNKNOWN_LEFT, (string) STR_CMD_HELP, (string) STR_COMMAND_UNKNOWN_RIGHT, "^";
     }
   } until(done);
   return chNum;
 ];
 
-[ confirm question len ok done;
+[ confirm question ok done;
   done = false;
   ok = false;
   do {
@@ -218,28 +297,18 @@ Array key -> 13;
       if (question) {
         print (string) question;
       } else {
-        print "Etes-vous sûr de vouloir faire cette action ? (oui/non)";
+        print (string) STR_DEFAULT_CONFIRM_MSG;
       }
-      print "^> ";
+      print " (", (string) STR_CMD_YES, "/", (string) STR_CMD_NO, ")^> ";
     } until(KeyLine(key)-->0);
-    len = length(key);
-    if (len == 1) {
-      if (key->inputBufferStartIndex == 'o' or '1') {
-        ok = true;
-        done = true;
-      } else if (key->inputBufferStartIndex == 'n' or '0') {
-        done = true;
-      }
-    } else if (len == 3) {
-      if (key->inputBufferStartIndex == 'o' && key->(inputBufferStartIndex+1) == 'u' && key->(inputBufferStartIndex+2) == 'i') {
-        ok = true;
-        done = true;
-      } else if (key->inputBufferStartIndex == 'n' && key->(inputBufferStartIndex+1) == 'o' && key->(inputBufferStartIndex+2) == 'n') {
-        done = true;
-      }
+    if (isCommand(STR_CMD_YES) || isCommand(STR_CMD_YES_SHORT)) {
+      ok = true;
+      done = true;
+    } else if (isCommand(STR_CMD_NO) || isCommand(STR_CMD_NO_SHORT)) {
+      done = true;
     }
     if (~~done) {
-      print "Veuillez répondre par oui ou non.^";
+      print (string) STR_PLEASE_ANSWER, (string) STR_CMD_YES, (string) STR_OR, (string) STR_CMD_NO,".^";
     }
   } until(done);
   return ok;
@@ -248,7 +317,7 @@ Array key -> 13;
 [ cls;
   #IfV3;
     ! in v3 it seems there is no way to clear the screen...
-    print "----------------------------------------^";
+    print (string) CLS_PATTERN, "^";
   #Ifnot;
     @erase_window -1; ! this opcode is not available in V3
   #EndIf;
@@ -264,37 +333,22 @@ Array key -> 13;
   #EndIf;
 ];
 
-`
 
-if (varsAsArray.length > 0) {
-result += `
-! Variables for Objects / Heroes
-!-------------------------------------------
-${varsAsArray.map(v => 'Global ' + v.identifier).join(';\n')};
-`}
-
-result += `
-[ clearObjects;
-  ${(varsAsArray && varsAsArray.length > 0) && varsAsArray.map(v => v.identifier + ' = false').join(';\n  ')};
-  return;
-];
-
-
-! Game menu entries
+! Menu
 ! -------------------------------------------
 
 [ showHelp;
-  ${ underline() }print "Liste des commandes^";
-  ${ roman() }! print "  - UNDO : Retourner au choix précédent^";
-  print "  - REDO : Recommencer depuis le début^";
-  print "  - LIST : Lister les objets récupérés^";
-  print "  - SHOW : Afficher le texte de la dernière séquence^";
-  print "  - EXIT : Quitter^";
+  ${ underline() }print (string) STR_LIST_OF_COMMANDS, "^";
+  ${ roman() }! print "  - ", (string) STR_CMD_UNDO, (string) STR_COLON, " ", (string) STR_BACK_TO_PREVIOUS, "^";
+  print "  - ", (string) STR_CMD_REDO, (string) STR_COLON, " ", (string) STR_RESTART_GAME, "^";
+  print "  - ", (string) STR_CMD_LIST, (string) STR_COLON, " ", (string) STR_LIST_OBJECTS, "^";
+  print "  - ", (string) STR_CMD_SHOW, (string) STR_COLON, " ", (string) STR_RESHOW_TEXT, "^";
+  print "  - ", (string) STR_CMD_EXIT, (string) STR_COLON, " ", (string) STR_QUIT, "^";
   rtrue;
 ];
 
 [ exit;
-  print "Bye-bye !^";
+  print (string) STR_BYE_BYE, "^";
   @quit;
 ];
 
@@ -304,50 +358,42 @@ result += `
 ];
 
 [ redo;
-  if (confirm("Recommencer depuis le début ?")) {
+  if (confirm(STR_CONFIRM_RESTART)) {
     markForRedo = 1;
     rtrue;
   }
   rfalse;
 ];
 
-[ inventory empty;
-  empty = true;
-  ${ underline() }print "Liste des objets de l'inventaire:^";
-  ${ roman() }${varsAsArray.map(v => 'if (' + v.identifier + ') {\n    print "* ' + v.desc + '^";\n    empty = false;\n  }').join('\n  ')}
-  if (empty) print "Votre inventaire est vide !^";
-  rtrue;
-];
-
-
-! Routines
-!-----------------------------------
-
-[ addOrRemoveObject obj;
-  if (obj) {
-    ++status_field_1;
-    print "Objet récupéré : ";
+[ inventory i;
+  if (countItems() == 0) {
+    print (string) STR_INVENTORY_EMPTY, "^";
   } else {
-    --status_field_1;
-    print "Objet perdu : ";
+    ${ underline(2) }print (string) STR_INVENTORY_LIST, "^";
+    ${ roman(2) }for (i=1: i<=COUNT_TOTAL_ITEMS: i++) {
+      if (hasItem(i)) print "* ", (string) getItemDescription(i), "^";
+    }
   }
   rtrue;
 ];
 
-[ inverse obj;
-  if (obj) rfalse; else rtrue;
-];
+
+! Presentation
+! -------------------------------------------
 
 [ startScreen;
-  ${ underline() }print "Cette histoire a été exportée avec Moiki Exporter.^La version originelle est accessible ici : https://moiki.fr/story/${_id}^^";
-  ${ roman() }print "Moiki présente:^";
-  ${ bold() }print "${meta.name}^^";
-  ${ roman() }print "Une histoire de ${getAuthor(meta)}^^${meta.description}^";
+  ${ underline() }print (string) STR_HEADER, " ", (string) STORY_URL, "^^";
+  ${ roman() }print (string) STR_MOIKI_PRESENTS, "^";
+  ${ bold() }print (string) STORY_TITLE, "^^";
+  ${ roman() }print (string) STR_A_STORY_BY, " ", (string) STORY_AUTHOR, "^^", (string) STORY_DESCRIPTION, "^";
   rtrue;
 ];
 
-[ startGameLoop next res;
-  next = ${convertId(firstSequence)};
+
+! Game loop
+! -------------------------------------------
+[ mainLoop firstSequence next res;
+  next = firstSequence;
   do {
     ++status_field_2; ! increase turn counter
     res = next();
@@ -363,43 +409,95 @@ result += `
   } until(~~next);
   if (gameOver > 0) {
     ${ bold(2) }if (gameOver == 1) {
-      print "Gagné !^^";
+      print (string) STR_WIN_GAME, "^^";
     } else if (gameOver == 2) {
-      print "Perdu !^^";
+      print (string) STR_LOSE_GAME, "^^";
     }
     ${ roman(2) }gameOver = 0;
   }
 ];
 
-[ Main replay;
+[ startGame firstSequence replay msg;
   startScreen();
   wait();
   do {
     cls();
     replay = false;
-    clearObjects();
+    clearItems();
     status_field_1 = 0; ! reset score counter
     status_field_2 = 0; ! reset turns counter
-    startGameLoop();
+    mainLoop(firstSequence);
     if (markForRedo == 1) {
       markForRedo = 0;
       replay = true;
-    } else if (confirm("Lancer une autre partie ? (oui/non)")) {
-      replay = true;
     } else {
-      exit();
+      
+      if (confirm(STR_ANOTHER_GAME)) {
+        replay = true;
+      } else {
+        exit();
+      }
     }
   } until(~~replay);
+];
+`
+
+  let moikiInformStory = `!% !-s
+!% $OMIT_UNUSED_ROUTINES=1
+
+! ${getHeader(_id).split('\n').join('\n! ')}
+
+! author: ${getAuthor(meta)}
+! title: ${meta.name}
+
+Object DefaultRoomForStatusBar "${meta.name}"; ! used to force name in status line
+
+! Constants
+! -------------------------------------------
+Constant STORY_TITLE = "${cleanContent(meta.name)}";
+Constant STORY_DESCRIPTION = "${cleanContent(meta.description)}";
+Constant STORY_AUTHOR = "${cleanContent(getAuthor(meta))}";
+Constant STORY_URL = "https://moiki.fr/story/${_id}";
+
+! Strings
+${Object.entries(STRINGS).map(([key, value]) => `Constant STR_${key} = "${value}";`).join('\n')}
+! Config
+Constant CLS_PATTERN = "${config.CLS_PATTERN.repeat(40).slice(0, 40)}";
+
+
+! Defines Objects / Heroes
+!-------------------------------------------
+Constant COUNT_TOTAL_ITEMS = ${varsAsArray.length};
+
+${varsAsArray.length > 0 && varsAsArray.map((v, i) => 'Constant ' + v.identifier + ' = ' + (i + 1) + ';').join('\n')}
+
+[ getItemDescription index;
+  switch (index) {
+    ${varsAsArray.length > 0 && varsAsArray.map(v => v.identifier + ': return "' + v.desc + '";').join('\n    ')}
+    default: return "";
+  }
+];
+
+Include "moikinform";
+
+
+! App entry point
+! ------------------------------------------
+[ Main;
+  startGame(${convertId(firstSequence)});
 ];
 
 
 ! Story sequences
 ! ------------------------------------------
-
 `
   for (let sequence of sequences) {
     const { statements, vars } = getNodeDescription(sequence, variables)
-    result += `[ ${convertId(sequence.id)}${vars && vars.length > 0 ? ' ' + vars.join(' ') : ''};\n  ${statements}\n];\n\n`
+    moikiInformStory += `[ ${convertId(sequence.id)}${vars && vars.length > 0 ? ' ' + vars.join(' ') : ''};\n  ${statements}\n];\n\n`
   }
-  return result
+
+  return [
+    { filename: 'moikinform.h', asBinary: true, data: moikiInformLibrary },
+    { filename: 'story.inf', asBinary: true, data: moikiInformStory}
+  ]
 }
