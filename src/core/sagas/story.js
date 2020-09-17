@@ -104,7 +104,7 @@ const getFormatManager = (format) => {
     case 'harlowe' : return { converter: s => convertToTwee(s, 'harlowe'), ext: 'twee' }
     case 'sugarcube' : return { converter: s => convertToTwee(s, 'sugarcube'), ext: 'twee' }
     case 'ink' : return { converter: convertToInk, ext: 'ink' }
-    case 'inform6' : return { converter: s => convertToInform(s, 'standard'), asZip: true }
+    case 'inform6' : return { converter: s => convertToInform(s, 'standard'), ext: 'zip' }
     case 'jdrbot' : return { converter: convertToJdrBot, ext: 'txt' }
     default:
       throw new Error('format invalid')
@@ -114,10 +114,10 @@ const getFormatManager = (format) => {
 export function *exportSaga(action) {
   const story = yield select(storySelectors.story)
   try {
-    const { ext, converter, asZip=false } = getFormatManager(action.payload)
+    const { ext, converter } = getFormatManager(action.payload)
     const files = converter(story)
     const filename = kebabCase(story.meta.name)
-    if (asZip) {
+    if (ext === 'zip') {
       const zip = new JSZip()
       for (let f of files) {
         if (f.asBinary) {
@@ -127,7 +127,7 @@ export function *exportSaga(action) {
         }
       }
       const blob = yield zip.generateAsync({type: 'blob'})
-      saveAs(blob, filename + '.zip')
+      saveAs(blob, filename + '.' + ext)
     } else {
       const blob = new Blob([converter(story)], {type: 'text/plain;charset=utf-8'})
       saveAs(blob, filename + '.' + ext)
