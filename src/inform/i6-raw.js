@@ -36,7 +36,6 @@ export const convertToI6Raw = (story) => {
       return [
         `cls();`,
         `${ bold(2) }toggleItem(${variables[choice.action.params].identifier});`,
-        `print "${cleanContent(variables[choice.action.params].desc)}";`,
         `${ roman(2) }wait();`,
         `return ${convertId(choice.next)};`
       ]
@@ -64,7 +63,6 @@ export const convertToI6Raw = (story) => {
         statements = [
           `print "${text}^^";`,
           `${ bold() }toggleItem(${variables[sequence.action.params].identifier});`,
-          `print "${cleanContent(variables[sequence.action.params].desc)}";`,
           `${ roman() }wait();`,
           `return ${convertId(sequence.next)};`
         ]
@@ -184,6 +182,7 @@ Global gameOver = 0;
     --status_field_1;
     print (string) STR_OBJECT_LOST;
   }
+  print (string) getItemDescription(index);
   return;
 ];
 
@@ -498,6 +497,6 @@ Include "moikinform";
 
   return [
     { filename: 'moikinform.h', asBinary: true, data: moikiInformLibrary },
-    { filename: 'story.inf', asBinary: true, data: moikiInformStory}
+    { filename: 'story.inf', asBinary: true, data: moikiInformStory }
   ]
 }

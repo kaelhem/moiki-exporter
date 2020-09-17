@@ -17,11 +17,11 @@ export const cleanContent = (content) => {
     .replace(/\^/gim, '@@94')
     .replace(/\\/gim, '@@92')
     .replace(/\~/gim, '@@126')
-    .replace(/\°/gim, ' ') // FIXME! the @@225 code seems to not work (event with the "Zcharacter table + '@{00B0}';" directive)
+    .replace(/°/gim, ' ') // FIXME! the @@225 code seems to not work (even with the "Zcharacter table + '@{00B0}';" directive)
     .replace(/\s*<br\s*\/*>(\s|&nbsp;)*/gi, '^')
     .replace(/(\s)*&nbsp;(\s)*/gi, ' ') // maybe: [unicode 160] ?
     .replace(/(\"|“|”)/gim, '~')
-    .replace(/\’/gim, '\'')
+    .replace(/’/gim, '\'')
     .trim()
 }
 
