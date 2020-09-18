@@ -1,4 +1,5 @@
 import { all, fork, takeEvery, put, select } from 'redux-saga/effects'
+import { push as navigateTo } from 'connected-react-router'
 import {
   types as storyTypes,
   actions as storyActions,
@@ -50,6 +51,7 @@ export function *importZip(zipData) {
     const data = JSON.parse(fileContent)
     yield generatePngIcons(data)
     yield put(storyMessages.importSuccess(data))
+    yield put(navigateTo('/export'))
   } catch (e) {
     console.log(e.message)
     yield put(storyMessages.importError('This file is not in the correct format!'))
@@ -60,6 +62,7 @@ export function *importJson(data) {
   try {
     yield generatePngIcons(data)
     yield put(storyMessages.importSuccess(data))
+    yield put(navigateTo('/export'))
   } catch (e) {
     console.log(e.message)
     yield put(storyMessages.importError('This file is not in the correct format!'))
@@ -99,12 +102,12 @@ export function *importSaga(action) {
   }
 }
 
-const getFormatManager = (format) => {
+const getFormatManager = (format, opts) => {
   switch (format) {
     case 'harlowe' : return { converter: s => convertToTwee(s, 'harlowe'), ext: 'twee' }
     case 'sugarcube' : return { converter: s => convertToTwee(s, 'sugarcube'), ext: 'twee' }
     case 'ink' : return { converter: convertToInk, ext: 'ink' }
-    case 'inform6' : return { converter: s => convertToInform(s, 'standard'), ext: 'zip' }
+    case 'inform6' : return { converter: s => convertToInform(s, 'inform6', opts), ext: 'zip' }
     case 'jdrbot' : return { converter: convertToJdrBot, ext: 'txt' }
     default:
       throw new Error('format invalid')
@@ -113,14 +116,15 @@ const getFormatManager = (format) => {
 
 export function *exportSaga(action) {
   const story = yield select(storySelectors.story)
+  const {format, options} = action.payload
   try {
-    const { ext, converter } = getFormatManager(action.payload)
+    const { ext, converter } = getFormatManager(format, options)
     const files = converter(story)
     const filename = kebabCase(story.meta.name)
     if (ext === 'zip') {
       const zip = new JSZip()
       for (let f of files) {
-        if (f.asBinary) {
+        if (options.encoding === 'latin1') {
           zip.file(f.filename, windows1252.encode(f.data), {binary: true})
         } else {
           zip.file(f.filename, f.data)

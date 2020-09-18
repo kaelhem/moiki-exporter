@@ -1,4 +1,4 @@
-.pdf-view-container {
+.options-view-container {
   display: flex;
   justify-content: center;
   flex-direction: column;
@@ -7,25 +7,25 @@
   height: 100%;
 }
 
-.pdf-view-container h2 {
+.options-view-container h2 {
   margin: 0.2em 0 0 0;
   width: 300px;
 }
 
-.pdf-view-container .ui.button,
-.pdf-view-container .ui.fluid.dropdown {
+.options-view-container .ui.button,
+.options-view-container .ui.fluid.dropdown {
   margin-bottom: 5px;
   margin-right: 0;
 }
 
-.pdf-sequences-container .textarea-container {
+.options-sequences-container .textarea-container {
   width: 100%;
   border-radius: 4px;
   border: 1px #dededf solid;
   padding: 10px;
 }
 
-.pdf-sequences-container textarea {
+.options-sequences-container textarea {
   width: 100%;
   resize: none;
   outline: none;
@@ -86,4 +86,19 @@
 .ui.toggle.checkbox input:checked~.box:before,
 .ui.toggle.checkbox input:checked~label:before {
   background-color: #0aa855!important;
+}
+
+.codemirror-source {
+  z-index: 1;
+  position: relative;
+  text-align: left;
+}
+
+.codemirror-source > div {
+  height: auto;
+}
+
+.inform-export-options .ui.toggle.checkbox {
+  width: 400px;
+  text-align: left;
 }

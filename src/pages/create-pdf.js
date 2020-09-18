@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Route, Switch, Redirect, Link } from 'react-router-dom'
+import { Route, Switch, Link } from 'react-router-dom'
 import { bindActionCreators } from 'redux'
 import { connect } from 'react-redux'
 import { actions as storyActions } from 'core/reducers/story'
@@ -10,7 +10,7 @@ import { generatePdfStream } from '../pdf/convert-to-pdfkit'
 import { saveAs } from 'file-saver'
 import kebabCase from 'lodash.kebabcase'
 import * as PDFViews from './pdf'
-import './create-pdf.css'
+import './page-options.css'
 
 const STATUS = {
   UP_TO_DATE: 'upToDate',
@@ -19,11 +19,9 @@ const STATUS = {
 
 const CreatePdf = (props) => {
   const {
-    showPdfView,
     pdfSettings,
     story,
     clear,
-    exitPdfView,
     initPdfStory,
     pdfStory,
     shuffleStory
@@ -110,18 +108,10 @@ const CreatePdf = (props) => {
     saveAs(blob, kebabCase(story.meta.name) + '.pdf')
   }
 
-  if (!story) {
-    return <Redirect to="/" />
-  }
-
-  if (!showPdfView) {
-    return <Redirect to="/export" />    
-  }
-
   return pdfStory ? (
      <div className="two-columns-view">
       <div className="divided-panel">
-        <div className="pdf-view-container">
+        <div className="options-view-container">
           <Menu secondary style={{ padding: '.5em .8em', margin: 0 }}>
             <Menu.Item
               style={{ marginLeft: 0 }}
@@ -155,11 +145,11 @@ const CreatePdf = (props) => {
           <Divider style={{ margin: 0 }}/>
           <div style={{ display: 'flex', padding: '.5em .8em' }}>
             <div style={{ display: 'flex', justifyContent: 'center', flexDirection: 'column', flexGrow: 1, marginRight: '.8em' }}>
-              <Button onClick={() => exitPdfView()}>Back</Button>
+              <Button as={Link} to='/export'>Back</Button>
               <Button style={{ marginBottom: 0 }} onClick={clear}>Import another story</Button>
             </div>
             <Button size="huge" style={{ marginBottom: 0 }} onClick={downloadPdf} color="green">
-              <Icon name='download' /> Download file
+              <Icon name='download' /> Download PDF
             </Button>
           </div>
         </div>
@@ -181,14 +171,11 @@ const mapStateToProps = (state) => ({
   error: state.story.exportError,
   story: state.story.story,
   pdfStory: state.pdf.simplifiedStory,
-  pdfSettings: state.pdf.settings,
-  showPdfView: state.pdf.showView
+  pdfSettings: state.pdf.settings
 })
 
 const mapDispatchToProps = (dispatch) => ({
-  exportStory: bindActionCreators(storyActions.export, dispatch),
   clear: bindActionCreators(storyActions.clear, dispatch),
-  exitPdfView: bindActionCreators(pdfActions.showView, dispatch),
   initPdfStory: bindActionCreators(pdfActions.initPdf, dispatch),
   shuffleStory: bindActionCreators(pdfActions.shuffleSequences, dispatch)
 })

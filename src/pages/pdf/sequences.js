@@ -98,7 +98,7 @@ const Sequences = (props) => {
   }
 
   return (
-    <div style={{ width: '100%' }} className="pdf-sequences-container">
+    <div style={{ width: '100%' }} className="options-sequences-container">
       <div style={{ margin: 10, height: 40 }}>
         <Input
           action={filter ? <Button onClick={() => setFilter('')}>clear</Button> : null}

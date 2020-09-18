@@ -2,7 +2,6 @@ import { types as storyTypes } from 'core/reducers/story'
 
 export const types = {
   INIT_PDF: 'moiki-exp/pdf/INIT_PDF',
-  SHOW_PDF_VIEW: 'moiki-exp/pdf/SHOW_PDF_VIEW',
   UPDATE_STORY: 'moiki-exp/pdf/UPDATE_STORY',
   SHUFFLE_SEQUENCES: 'moiki-exp/pdf/SHUFFLE_SEQUENCES',
   UPDATE_SETTINGS: 'moiki-exp/pdf/UPDATE_SETTINGS',
@@ -10,7 +9,6 @@ export const types = {
 }
 
 const initialState = {
-  showView: false,
   simplifiedStory: null,
   settings: {
     format: 'A4',
@@ -33,12 +31,6 @@ export default function pdfReducer(state = initialState, action = {}) {
         ...state,
         showView: false,
         simplifiedStory: null
-      }
-    }
-    case types.SHOW_PDF_VIEW: {
-      return {
-        ...state,
-        showView: action.payload
       }
     }
     case types.UPDATE_SETTINGS: {

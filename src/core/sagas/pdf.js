@@ -35,7 +35,7 @@ export function *initPdfSaga(action) {
     yield put(pdfActions.updateStory({meta, variables, sequences, sequencesShuffle}))
   } catch(e) {
     console.log(e)
-    yield put(pdfActions.showView(false))
+    // maybe redirect on /export ?
   }
 }
 

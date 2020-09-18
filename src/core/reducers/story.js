@@ -48,7 +48,6 @@ export default function storyReducer(state = {}, action = {}) {
         exportError: action.payload
       }
     }
-    case 'persist/REHYDRATE':
     case types.CLEAR: {
       return initialState
     }
@@ -59,7 +58,7 @@ export default function storyReducer(state = {}, action = {}) {
 
 export const actions = {
   import: (file) => ({type: types.IMPORT, payload: file}),
-  export: (format) => ({type: types.EXPORT, payload: format}),
+  export: (format, options={}) => ({type: types.EXPORT, payload: {format, options}}),
   clear: () => ({type: types.CLEAR})
 }
 

@@ -112,10 +112,10 @@ a.ui.button:hover {
 
 .fork-me-on-github {
   top: 40px !important;
+  z-index: 1;
 }
 
 .zip-warning {
-  position: absolute;
   background: rgb(204, 204, 204);
   color: rgb(51, 51, 51);
   padding: 1em;

@@ -4094,6 +4094,11 @@ code-point-at@^1.0.0:
   resolved "https://registry.yarnpkg.com/code-point-at/-/code-point-at-1.1.0.tgz#0d070b4d043a5bea33a2f1a40e2edb3d9a4ccf77"
   integrity sha1-DQcLTQQ6W+ozovGkDi7bPZpMz3c=
 
+codemirror@^5.57.0:
+  version "5.57.0"
+  resolved "https://registry.yarnpkg.com/codemirror/-/codemirror-5.57.0.tgz#d26365b72f909f5d2dbb6b1209349ca1daeb2d50"
+  integrity sha512-WGc6UL7Hqt+8a6ZAsj/f1ApQl3NPvHY/UQSzG6fB6l4BjExgVdhFaxd7mRTw1UCiYe/6q86zHP+kfvBQcZGvUg==
+
 collection-visit@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/collection-visit/-/collection-visit-1.0.0.tgz#4bc0373c164bc3291b4d368c829cf1a80a59dca0"
@@ -8386,10 +8391,10 @@ mkdirp@^0.5.1, mkdirp@^0.5.3, mkdirp@~0.5.1:
   dependencies:
     minimist "^1.2.5"
 
-moiki-exporter@^0.2.0:
-  version "0.2.0"
-  resolved "https://registry.yarnpkg.com/moiki-exporter/-/moiki-exporter-0.2.0.tgz#f34bc929ee2b05675b1690ed9d8cfe55f7722e88"
-  integrity sha512-yTbKnebCqhyC0VCyXGEOrbZHLykIbbbS5kPkzjZ4AWpiCH9zlwYY6VnvuDAMIvDwEPp8wu/zBl6eKru1VXqHRQ==
+moiki-exporter@^0.2.1:
+  version "0.2.1"
+  resolved "https://registry.yarnpkg.com/moiki-exporter/-/moiki-exporter-0.2.1.tgz#a2bf93d3aac8e7b3fc36fbcb04732039f692791f"
+  integrity sha512-QR/YYskSyYpHRjnFZylka1LbSI58htQyeTm6nhn4kqM01f+KmU8bz1yiLe1ShWnEqblVJR1omEjRgAgR86CrOQ==
   dependencies:
     lodash.kebabcase "^4.1.1"
     uuid "^7.0.2"
@@ -10217,6 +10222,11 @@ react-app-polyfill@^1.0.6:
     raf "^3.4.1"
     regenerator-runtime "^0.13.3"
     whatwg-fetch "^3.0.0"
+
+react-codemirror2@^7.2.1:
+  version "7.2.1"
+  resolved "https://registry.yarnpkg.com/react-codemirror2/-/react-codemirror2-7.2.1.tgz#38dab492fcbe5fb8ebf5630e5bb7922db8d3a10c"
+  integrity sha512-t7YFmz1AXdlImgHXA9Ja0T6AWuopilub24jRaQdPVbzUJVNKIYuy3uCFZYa7CE5S3UW6SrSa5nAqVQvtzRF9gw==
 
 react-dev-utils@^10.2.1:
   version "10.2.1"
