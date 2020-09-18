@@ -22,6 +22,9 @@ _Several formats available!_
 ![](https://raw.githubusercontent.com/kaelhem/moiki-exporter/website/public/screenshots/export-pdf.png)
 _Transform your story in CYOA interactive book!_
 
+![](https://raw.githubusercontent.com/kaelhem/moiki-exporter/website/public/screenshots/export-inform.png)
+_Inform export has some options too!_
+
 ## Howto
 
 Export your story made on Moiki as JSON format ([documentation](https://moiki.fr/documentation/export) - *french only*) and drag the downloaded _.zip_ file on [Moiki-Exporter website](https://moiki-exporter.netlify.app/). Then you can choose the export format that you want.
