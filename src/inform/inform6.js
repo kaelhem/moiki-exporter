@@ -7,13 +7,13 @@ TODO:
 
 import kebabCase from 'lodash.kebabcase'
 import { getHeader, getAuthor } from '../utils'
-import * as informUtils from './i6-utils'
+import * as informUtils from './inform6-utils'
 
-export const convertToI6Raw = (story) => {
+export const convertToInform6 = (story, opts={}) => {
   const { _id, meta, firstSequence, sequences, assets } = story
   const { convertId, cleanContent } = informUtils
-  const STRINGS = informUtils.DEFAULT_STRINGS_FR
-  const config = informUtils.informDefaultConfig
+  const settings = {...informUtils.informDefaultSettings, ...opts}
+  const STRINGS = {...(settings.lang === 'fr' ? informUtils.DEFAULT_STRINGS_FR : informUtils.DEFAULT_STRINGS_EN), ...(settings.strings || {})}
 
   const writeStyle = (style, tabs=1) => `#IfV5; style ${style}; #EndIf;\n${'  '.repeat(tabs)}`
   const bold = (tabs) => writeStyle('bold', tabs)
@@ -34,20 +34,16 @@ export const convertToI6Raw = (story) => {
   const getChoiceLinkValue = (choice, variables) => {
     if (choice.action && choice.action.params && typeof choice.action.params === 'string') {
       return [
-        `cls();`,
-        `${ bold(2) }toggleItem(${variables[choice.action.params].identifier});`,
-        `${ roman(2) }wait();`,
+        `toggleItem(${variables[choice.action.params].identifier});`,
         `return ${convertId(choice.next)};`
       ]
     } else if (choice.condition && choice.condition.next && choice.condition.params) {
       return [
-        `cls();`,
         `if (hasItem(${variables[choice.condition.params].identifier})) return ${convertId(choice.condition.next)};`,
         `return ${convertId(choice.next)};`
       ]
     } else {
       return [ 
-        `cls();`,
         `return ${convertId(choice.next)};`
       ]
     }
@@ -62,21 +58,20 @@ export const convertToI6Raw = (story) => {
       if (sequence.action && sequence.action.params && typeof sequence.action.params === 'string') {
         statements = [
           `print "${text}^^";`,
-          `${ bold() }toggleItem(${variables[sequence.action.params].identifier});`,
-          `${ roman() }wait();`,
+          `toggleItem(${variables[sequence.action.params].identifier});`,
           `return ${convertId(sequence.next)};`
         ]
       } else if (sequence.condition && sequence.condition.next && sequence.condition.params) {
         statements = [
           `print "${text}";`,
-          `wait();`,
+          !settings.disablePauseOnSimpleSequence && `wait();`,
           `if (hasItem(${variables[sequence.condition.params].identifier})) return ${convertId(sequence.condition.next)};`,
           `return ${convertId(sequence.next)};`
         ]
       } else {
         statements = [
           `print "${text}";`,
-          `wait();`,
+          !settings.disablePauseOnSimpleSequence && `wait();`,
           `return ${convertId(sequence.next)};`
         ]
       }
@@ -101,13 +96,13 @@ export const convertToI6Raw = (story) => {
       // final sequence
       statements = [
         `print "${text}^";`,
-        `wait();`,
+        !settings.disablePauseOnGameOver && `wait();`,
         `gameOver = ${ sequence.isHappyEnd ? '1' : '2'};`,
         `return nothing;`
       ]
     }
     return {
-      statements: statements.join('\n  '),
+      statements: statements.filter(s => !!s).join('\n  '),
       vars: listVars
     }
   }
@@ -115,11 +110,13 @@ export const convertToI6Raw = (story) => {
   // this helper method allows to construct the conditions checking user input (to match commands)
   const getInputConditionFor = (str, lenVarName='len') => {
     const matchChars = str.toLowerCase().split('').map((c, i) => {
-      const thisKey = i === 0 ? `key->inputBufferStartIndex` : `key->(inputBufferStartIndex+${i})`
+      const thisKey = i === 0 ? `key->arrayStartIndex` : `key->(arrayStartIndex+${i})`
       return `${thisKey} == '${c}'`
     }).join(' && ')
     return `if (${lenVarName} == ${str.length} && ${matchChars}) {`
   }
+
+  const onAfterChoice = settings.preferSeparatorThanCls ? 'print (string) CLS_PATTERN, "^";' : 'cls();'
 
   const moikiInformLibrary = `! This file contains the necessary core for the Moiki export to Inform6
 ! kaelhem (c) 2020
@@ -133,7 +130,6 @@ Global location = DefaultRoomForStatusBar; ! Must be the first global to show lo
 Global status_field_1 = 0; ! Must be the second global to show score or hours
 Global status_field_2 = 0; ! Must be the third global to show turns or minutes
 
-
 ! Variables for game management
 ! -------------------------------------------
 ! Array path --> 10; ! allow 10 undo moves, but it's not implemented yet...
@@ -141,8 +137,8 @@ Global markForRedo = 0; ! used to restart game from beginning
 Global markForShow = 0; ! used to re-display sequence text
 Global gameOver = 0;
 
-
-! Items management
+${ varsAsArray.length > 0 ? (
+`! Items management
 ! -------------------------------------------
 
 #IfV3;
@@ -173,7 +169,7 @@ Global gameOver = 0;
 ];
 
 [ toggleItem index;
-  if (userItems->index == 0) {
+  ${ bold() }if (userItems->index == 0) {
     userItems->index = 1;
     ++status_field_1;
     print (string) STR_OBJECT_WON;
@@ -183,7 +179,7 @@ Global gameOver = 0;
     print (string) STR_OBJECT_LOST;
   }
   print (string) getItemDescription(index);
-  return;
+  ${ roman() }${ !settings.disablePauseOnItems ? 'wait();\n  ' : '' }return;
 ];
 
 [ countItems i count;
@@ -193,20 +189,21 @@ Global gameOver = 0;
   }
   return count;
 ];
+`) : ''}
 
 ! Manage user inputs
 ! -------------------------------------------
 
 ! fix: in z-code v3, input buffers are not formatted the same way...
 #IfV3;
-  Constant inputBufferStartIndex 1;
+  Constant arrayStartIndex 1;
   [ length arr len;
     len = 0;
     while (arr->(len+1) ~= 0) ++len;
     return len;
   ];
 #Ifnot;
-  Constant inputBufferStartIndex 2;
+  Constant arrayStartIndex 2;
   [ length arr;
     return arr->1;
   ];
@@ -237,7 +234,7 @@ Global gameOver = 0;
   aCmd = toArray(cmd);
   if (aCmd-->0 == length(key)) {
     for (i=0: i<aCmd-->0: i++) {
-      if (key->(inputBufferStartIndex+i) ~= toLowerCase(aCmd->(2+i))) rfalse;
+      if (key->(arrayStartIndex+i) ~= toLowerCase(aCmd->(2+i))) rfalse;
     }
     rtrue;
   }
@@ -257,9 +254,9 @@ Array key -> 13;
     } until(KeyLine(key)-->0);
     len = length(key);
     if (len == 1) {
-      chNum = key->inputBufferStartIndex - 48;
+      chNum = key->arrayStartIndex - 48;
       if (chNum > 0 && chNum <= numChoices) {
-        done = true;
+        ${ !settings.disableClearScreenOnChoice ? '' + onAfterChoice + '\n        ' : '' }done = true;
       } else if (chNum > 0 && chNum <= 10) {
         print (string) STR_NOCHOICE_MATCH, "^";
       } else {
@@ -273,11 +270,9 @@ Array key -> 13;
       if (redo()) return 0;
     } else if (isCommand(STR_CMD_EXIT)) {
       exit();
-    } else if (isCommand(STR_CMD_LIST)) {
-      inventory();
     } else if (isCommand(STR_CMD_SHOW)) {
       markForShow = 1;
-      return 0;
+      return 0;${ varsAsArray.length > 0 ? '\n    } else if (isCommand(STR_CMD_LIST)) {\n      inventory();\n    ' : '' }
     } else {
       commandUnknown = true;
     }
@@ -340,10 +335,9 @@ Array key -> 13;
   ${ underline() }print (string) STR_LIST_OF_COMMANDS, "^";
   ${ roman() }! print "  - ", (string) STR_CMD_UNDO, (string) STR_COLON, " ", (string) STR_BACK_TO_PREVIOUS, "^";
   print "  - ", (string) STR_CMD_REDO, (string) STR_COLON, " ", (string) STR_RESTART_GAME, "^";
-  print "  - ", (string) STR_CMD_LIST, (string) STR_COLON, " ", (string) STR_LIST_OBJECTS, "^";
   print "  - ", (string) STR_CMD_SHOW, (string) STR_COLON, " ", (string) STR_RESHOW_TEXT, "^";
   print "  - ", (string) STR_CMD_EXIT, (string) STR_COLON, " ", (string) STR_QUIT, "^";
-  rtrue;
+  ${ varsAsArray.length > 0 ? 'print "  - ", (string) STR_CMD_LIST, (string) STR_COLON, " ", (string) STR_LIST_OBJECTS, "^";\n  ' : '' }rtrue;
 ];
 
 [ exit;
@@ -363,7 +357,7 @@ Array key -> 13;
   }
   rfalse;
 ];
-
+${ varsAsArray.length > 0 ? (`
 [ inventory i;
   if (countItems() == 0) {
     print (string) STR_INVENTORY_EMPTY, "^";
@@ -375,7 +369,7 @@ Array key -> 13;
   }
   rtrue;
 ];
-
+`) : '' }
 
 ! Presentation
 ! -------------------------------------------
@@ -416,21 +410,20 @@ Array key -> 13;
   }
 ];
 
-[ startGame firstSequence replay msg;
+[ startGame firstSequence replay;
   startScreen();
   wait();
   do {
     cls();
     replay = false;
-    clearItems();
+    location = DefaultRoomForStatusBar; ! reset location (avoid compiler warning)
     status_field_1 = 0; ! reset score counter
-    status_field_2 = 0; ! reset turns counter
+    status_field_2 = 0; ! reset turns counter${ varsAsArray.length > 0 ? `\n    clearItems();` : '' }
     mainLoop(firstSequence);
     if (markForRedo == 1) {
       markForRedo = 0;
       replay = true;
     } else {
-      
       if (confirm(STR_ANOTHER_GAME)) {
         replay = true;
       } else {
@@ -440,8 +433,8 @@ Array key -> 13;
   } until(~~replay);
 ];
 `
-
-  let moikiInformStory = `!% !-s
+  const encoding = settings.encoding === 'utf8' ? '!% -Cu\n' : ''
+  let moikiInformStory = `${encoding}!% -~S
 !% $OMIT_UNUSED_ROUTINES=1
 
 ! ${getHeader(_id).split('\n').join('\n! ')}
@@ -459,24 +452,29 @@ Constant STORY_AUTHOR = "${cleanContent(getAuthor(meta))}";
 Constant STORY_URL = "https://moiki.fr/story/${_id}";
 
 ! Strings
-${Object.entries(STRINGS).map(([key, value]) => `Constant STR_${key} = "${value}";`).join('\n')}
+${Object.entries(STRINGS).filter(([key, value]) => {
+  return !(informUtils.stringsForItems.find(s => s === key) && varsAsArray.length === 0)
+}).map(([key, value]) => `Constant STR_${key} = "${value}";`).join('\n')}
 ! Config
-Constant CLS_PATTERN = "${config.CLS_PATTERN.repeat(40).slice(0, 40)}";
+Constant CLS_PATTERN = "${settings.clsPattern.repeat(40).slice(0, 40)}";
 
-
+${ varsAsArray.length > 0 ? (`
 ! Defines Objects / Heroes
 !-------------------------------------------
 Constant COUNT_TOTAL_ITEMS = ${varsAsArray.length};
 
-${varsAsArray.length > 0 && varsAsArray.map((v, i) => 'Constant ' + v.identifier + ' = ' + (i + 1) + ';').join('\n')}
+${true && varsAsArray.map((v, i) => 'Constant ' + v.identifier + ' = ' + (i + 1) + ';').join('\n')}
 
 [ getItemDescription index;
   switch (index) {
-    ${varsAsArray.length > 0 && varsAsArray.map(v => v.identifier + ': return "' + v.desc + '";').join('\n    ')}
+    ${true && varsAsArray.map(v => v.identifier + ': return "' + v.desc + '";').join('\n    ')}
     default: return "";
   }
 ];
 
+`) : ''}
+! Include MoikInform library
+! ------------------------------------------
 Include "moikinform";
 
 
@@ -496,7 +494,7 @@ Include "moikinform";
   }
 
   return [
-    { filename: 'moikinform.h', asBinary: true, data: moikiInformLibrary },
-    { filename: 'story.inf', asBinary: true, data: moikiInformStory }
+    { filename: 'moikinform.h', data: moikiInformLibrary },
+    { filename: 'story.inf', data: moikiInformStory }
   ]
 }

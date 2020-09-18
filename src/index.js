@@ -1,5 +1,5 @@
 export { convertToInk } from './ink'
-export { convertToInform } from './inform'
+export { convertToInform, inform6Utils } from './inform'
 export { convertToTwee } from './twee'
 export { convertToJdrBot } from './jdr-bot'
 export { version } from '../package.json'

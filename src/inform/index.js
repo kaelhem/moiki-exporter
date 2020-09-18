@@ -1,12 +1,10 @@
-import { convertToI6Raw } from './i6-raw'
-import { convertToI6WithParser } from './i6-with-parser'
+import { convertToInform6 } from './inform6'
 
-export const convertToInform = (story, format) => {
-  if (format === 'with-parser') {
-    return convertToI6WithParser(story)
-  }
-  if (format === 'standard') {
-    return convertToI6Raw(story)
+export * as inform6Utils from './inform6-utils'
+
+export const convertToInform = (story, format, options) => {
+  if (format === 'inform6') {
+    return convertToInform6(story, options)
   }
   throw new Error('This format is unvailable!')
 }

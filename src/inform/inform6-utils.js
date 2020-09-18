@@ -25,8 +25,15 @@ export const cleanContent = (content) => {
     .trim()
 }
 
-export const informDefaultConfig = {
-  CLS_PATTERN: '--', // used in v3 as separator (because the lack of clear screen function)
+export const informDefaultSettings = {
+  lang: 'fr',
+  encoding: 'utf8',
+  clsPattern: '--', // used in v3 as separator (because the lack of clear screen function)
+  disablePauseOnItems: false,
+  disablePauseOnSimpleSequence: false,
+  disablePauseOnGameOver: false,
+  disableClearScreenOnChoice: false,
+  preferSeparatorThanCls: false
 }
 
 export const DEFAULT_STRINGS_FR = {
@@ -46,7 +53,7 @@ export const DEFAULT_STRINGS_FR = {
   CMD_NO_SHORT: 'n',
   NOCHOICE_MATCH: 'Cette saisie ne correspond à aucun choix !',
   LIST_OF_COMMANDS: 'Liste des commandes',
-  BACK_TO_PREVIOUS: 'Retourner au choix précédent',
+  //BACK_TO_PREVIOUS: 'Retourner au choix précédent',
   RESTART_GAME: 'Recommencer depuis le début',
   LIST_OBJECTS: 'Lister les objets récupérés',
   RESHOW_TEXT: 'Afficher le texte de la dernière séquence',
@@ -84,7 +91,7 @@ export const DEFAULT_STRINGS_EN = {
   CMD_NO_SHORT: 'n',
   NOCHOICE_MATCH: 'This entry does not correspond to any choice!',
   LIST_OF_COMMANDS: 'List of commands',
-  BACK_TO_PREVIOUS: 'Back to previous choice',
+  //BACK_TO_PREVIOUS: 'Back to previous choice',
   RESTART_GAME: 'Restart the game',
   LIST_OBJECTS: 'List of items won',
   RESHOW_TEXT: 'Show the text of the last sequence',
@@ -95,8 +102,8 @@ export const DEFAULT_STRINGS_EN = {
   INVENTORY_EMPTY: 'Inventory is empty!',
   OBJECT_WON: 'Item won : ',
   OBJECT_LOST: 'Item lost : ',
-  WIN_GAME: 'Won !',
-  LOSE_GAME: 'Lost !',
+  WIN_GAME: 'Won!',
+  LOSE_GAME: 'Lost!',
   COMMAND_UNKNOWN_LEFT: 'This command is unknown! Type ~',
   COMMAND_UNKNOWN_RIGHT: '~ for a list of available commands.',
   DEFAULT_CONFIRM_MSG: `Are you sure you want to take this action?`,
@@ -104,3 +111,5 @@ export const DEFAULT_STRINGS_EN = {
   PLEASE_ANSWER: `Please answer `,
   ANOTHER_GAME: `Start another game?`
 }
+
+export const stringsForItems = ['INVENTORY_EMPTY', 'INVENTORY_LIST', 'CMD_LIST', 'LIST_OBJECTS', 'OBJECT_WON', 'OBJECT_LOST']
