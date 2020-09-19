@@ -92,6 +92,7 @@
   z-index: 1;
   position: relative;
   text-align: left;
+  width: 100%;
 }
 
 .codemirror-source > div {

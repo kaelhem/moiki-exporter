@@ -22,40 +22,22 @@ const CreateInform = (props) => {
     clear
   } = props
 
-  const [informSource, setInformSource] = useState(null)
+  const [selectedFile, setSelectedFile] = useState(0)
+  const [files, setFiles] = useState(null)
 
   useEffect(() => {
     const files = story ? convertToInform(story, 'inform6', settings) : null
-    if (files) {
-      const source = files.find(f => f.filename.endsWith('.inf')).data
-      if (settings.encoding === 'utf8') {
-        setInformSource(source)
-      } else {
-        setInformSource(windows1252.encode(source))
-      }
-    }
+    setFiles(files)
   }, [story, settings])
+
+  const withEncoding = (data) => {
+    return settings.encoding === 'utf8' ? data : windows1252.encode(data)
+  }
 
   return story ? (
      <div className="two-columns-view">
       <div className="divided-panel">
         <div className="options-view-container">
-          <Menu secondary style={{ padding: '.5em .8em', margin: 0 }}>
-            <Menu.Item
-              style={{ marginLeft: 0 }}
-              name='options'
-              active={props.location.pathname.endsWith('/create-inform')}
-              as={Link}
-              to='/create-inform'
-            />
-            {/*<Menu.Item
-              name='strings'
-              active={props.location.pathname.endsWith('/strings')}
-              as={Link}
-              to='/create-inform/strings'
-            />*/}
-          </Menu>
-          <Divider style={{ margin: 0, marginBottom: -1 }} />
           <div style={{ display: 'flex', flexGrow: 1, width: '100%' }}>
             <Switch>
               <Route exact path={`${props.match.path}`} component={InformPanes.Options} />
@@ -69,26 +51,41 @@ const CreateInform = (props) => {
               <Button style={{ marginBottom: 0 }} onClick={clear}>Import another story</Button>
             </div>
             <Button size="huge" style={{ marginBottom: 0 }} onClick={() => exportStory('inform6', settings)} color="green">
-              <Icon name='download' /> Download file
+              <Icon name='download' /> Download files
             </Button>
           </div>
         </div>
       </div>
       <div className="divided-panel" style={{ borderLeft: '2px rgb(79, 82, 85) solid'}}>
-        { informSource ? (
-          <div style={{ display: 'flex', maxHeight: 'calc(100vh - 60px)', overflow: 'auto' }}>
-            <CodeMirror
-              className='codemirror-source'
-                value={ informSource }
-                options={{
-                  mode: 'text/x-inform6',
-                  theme: 'material',
-                  lineNumbers: true,
-                  lineWrapping: true,
-                  readOnly: true,
-                  cursorBlinkRate: -1
-                }}
-              />
+        { files && files.length > 0 ? (
+          <div style={{ width: '100%' }}>
+            <Menu secondary style={{ padding: '.5em .8em', margin: 0 }}>
+              { files && files.map((f, idx) => (
+                <Menu.Item
+                  key={'file_' + idx}
+                  style={{ marginLeft: 0 }}
+                  name={f.filename}
+                  content={f.filename}
+                  active={selectedFile === idx}
+                  onClick={() => setSelectedFile(idx)}
+                />
+              ))}
+            </Menu>
+            <Divider style={{ margin: 0, marginBottom: -1 }} />
+            <div style={{ display: 'flex', maxHeight: 'calc(100vh - 111px)', overflow: 'auto' }}>
+              <CodeMirror
+                className='codemirror-source'
+                  value={ withEncoding(files[selectedFile].data) }
+                  options={{
+                    mode: 'text/x-inform6',
+                    theme: 'material',
+                    lineNumbers: true,
+                    lineWrapping: true,
+                    readOnly: true,
+                    cursorBlinkRate: -1
+                  }}
+                />
+            </div>
           </div>
         ) : (
           <div className="generator-loader-container">

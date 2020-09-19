@@ -27,7 +27,7 @@ export default function informReducer(state = initialState, action = {}) {
     case types.UPDATE_SETTINGS: {
       return {
         ...state,
-        settings: action.payload
+        settings: {...state.settings, ...action.payload}
       }
     }
     case types.RESET_SETTINGS: {
