@@ -456,7 +456,7 @@ ${Object.entries(STRINGS).filter(([key, value]) => {
   return !(informUtils.stringsForItems.find(s => s === key) && varsAsArray.length === 0)
 }).map(([key, value]) => `Constant STR_${key} = "${value}";`).join('\n')}
 ! Config
-Constant CLS_PATTERN = "${settings.clsPattern.repeat(40).slice(0, 40)}";
+Constant CLS_PATTERN = "${settings.clsPattern.slice(0, 40).repeat(40).slice(0, 40)}";
 
 ${ varsAsArray.length > 0 ? (`
 ! Defines Objects / Heroes
@@ -494,7 +494,7 @@ Include "moikinform";
   }
 
   return [
-    { filename: 'moikinform.h', data: moikiInformLibrary },
-    { filename: 'story.inf', data: moikiInformStory }
+    { filename: 'story.inf', data: moikiInformStory },
+    { filename: 'moikinform.h', data: moikiInformLibrary }
   ]
 }
