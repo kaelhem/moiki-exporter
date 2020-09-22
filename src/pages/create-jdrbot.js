@@ -4,10 +4,10 @@ import { connect } from 'react-redux'
 import { actions as storyActions } from 'core/reducers/story'
 import { Grid } from 'semantic-ui-react'
 import ExportPageLayout from 'containers/export-page-layout'
-import { convertToInk } from 'moiki-exporter'
+import { convertToJdrBot } from 'moiki-exporter'
 import './page-options.css'
 
-const CreateInk = (props) => {
+const CreateJdrBot = (props) => {
   const {
     exportStory,
     story,
@@ -18,14 +18,14 @@ const CreateInk = (props) => {
   const [file, setFile] = useState(null)
 
   useEffect(() => {
-    setFile(story ? convertToInk(story) : null)
+    setFile(story ? convertToJdrBot(story) : null)
   }, [story])
 
-  const InkOptionsPane = (props) => (
+  const OptionsPane = (props) => (
     <div className="export-buttons export-pane-options" style={{ width: 400, minHeight: 360, margin: 'auto' }}>
       <Grid columns={2}>
         <div>
-          Ink is the language of Inkle's Studio. Export your Moiki story in this format and open it with <a target="_blank" rel="noopener noreferrer" href="https://www.inklestudios.com/ink/">Inky</a>.
+          <a target="_blank" rel="noopener noreferrer" href="https://github.com/Cyril-Fiesta/jdr-bot">JDR-Bot</a> is a french discord bot that allows teams to play roleplay games. This export will allows you to transform your Moiki story in a scenario for this bot.
         </div>
       </Grid>
     </div>
@@ -35,10 +35,10 @@ const CreateInk = (props) => {
     story,
     match,
     location,
-    leftPanes: [{ name: 'options', component: InkOptionsPane}],
-    rightPanes: file && [{ name: 'story.ink', showSource: {data: file, options: {mode: 'text/x-ink'}} }],
+    leftPanes: [{ name: 'options', component: OptionsPane}],
+    rightPanes: file && [{ name: 'story.ink', showSource: {data: file} }],
     downloadButtonLabel: 'Download file',
-    onDownload: () => exportStory('ink')
+    onDownload: () => exportStory('jdrbot')
   }
 
   return (
@@ -56,4 +56,4 @@ const mapDispatchToProps = (dispatch) => ({
   exportStory: bindActionCreators(storyActions.export, dispatch)
 })
 
-export default connect(mapStateToProps, mapDispatchToProps)(CreateInk)
+export default connect(mapStateToProps, mapDispatchToProps)(CreateJdrBot)

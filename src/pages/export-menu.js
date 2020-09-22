@@ -10,7 +10,6 @@ const ExportMenu = (props) => {
   const {
     error,
     story,
-    exportStory,
     clear
   } = props
 
@@ -36,15 +35,10 @@ const ExportMenu = (props) => {
             <h2>{story.meta.name}</h2>
             <div><em>A story by {utils.getAuthor(story.meta)}</em></div>
           </Segment>
-          {/*}
-          <Button onClick={() => exportStory('ink')}>Export to Inkle's ink</Button>
-          <Button onClick={() => exportStory('harlowe')}>Export to Twee (<em>Harlowe 3.1.0</em>)</Button>
-          <Button onClick={() => exportStory('sugarcube')}>Export to Twee (<em>SugarCube 2.31.1</em>)</Button>
-          */}
           <Button as={Link} to='/create-ink'>Export to Inkle's ink</Button>
           <Button as={Link} to='/create-twine'>Export to Twee</Button>
           <Button as={Link} to='/create-inform'>Export to Inform (<em>v6</em>)</Button>
-          <Button onClick={() => exportStory('jdrbot')}>Export to JDR-Bot</Button>
+          <Button as={Link} to='/create-jdrbot'>Export to JDR-Bot</Button>
           <Button as={Link} to='/create-pdf'>Make PDF...</Button>
           <Divider />
           <Button onClick={clear}>Import another story</Button>
@@ -61,7 +55,6 @@ const mapStateToProps = (state) => ({
 })
 
 const mapDispatchToProps = (dispatch) => ({
-  exportStory: bindActionCreators(storyActions.export, dispatch),
   clear: bindActionCreators(storyActions.clear, dispatch),
 })
 export default connect(mapStateToProps, mapDispatchToProps)(ExportMenu)

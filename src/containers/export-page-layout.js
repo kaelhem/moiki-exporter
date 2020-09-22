@@ -113,7 +113,7 @@ const ExportPageLayout = (props) => {
             <Divider style={{ margin: 0, marginBottom: -1 }} />
           </div>
         )}
-        <div style={{ display: 'flex', maxHeight: 'calc(100vh - ' + (rightPanes && rightPanes.length > 1 ? '111' : '60') + 'px)', overflow: 'auto' }}>
+        <div style={{ display: 'flex', maxHeight: 'calc(100vh - ' + (rightPanes && rightPanes.length > 1 ? '111' : '60') + 'px)', overflow: 'auto', width: 'inherit' }}>
           { rightPanes && rightPanes[secondaryMenuSelectedIndex] && rightPanes[secondaryMenuSelectedIndex].showSource ? (
             <CodeMirror
               className='codemirror-source'

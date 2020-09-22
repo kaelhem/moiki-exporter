@@ -10,6 +10,7 @@ const CreatePdf = lazy(() => import(/* webpackChunkName: "create-pdf" */'./pages
 const CreateInform = lazy(() => import(/* webpackChunkName: "create-inform" */'./pages/create-inform'))
 const CreateTwine = lazy(() => import(/* webpackChunkName: "create-twine" */'./pages/create-twine'))
 const CreateInk = lazy(() => import(/* webpackChunkName: "create-ink" */'./pages/create-ink'))
+const CreateJdrBot = lazy(() => import(/* webpackChunkName: "create-jdrbot" */'./pages/create-jdrbot'))
 
 const App = () => {
   return (  
@@ -22,6 +23,7 @@ const App = () => {
           <RouteWithStory path="/create-inform" component={ CreateInform } />
           <RouteWithStory path="/create-twine" component={ CreateTwine } />
           <RouteWithStory path="/create-ink" component={ CreateInk } />
+          <RouteWithStory path="/create-jdrbot" component={ CreateJdrBot } />
           <Redirect to="/" />
         </Switch>
       </Suspense>
