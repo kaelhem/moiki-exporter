@@ -32,29 +32,6 @@
   border: none;
 }
 
-.generator-loader-container {
-  width: 50vw;
-  right: 0;
-  position: absolute;
-  top: 40px;
-  bottom: 20px;
-  background-color: rgba(0,0,0,.85);
-}
-
-.two-columns-view {
-  display: flex;
-  justify-content: center;
-  align-items: stretch;
-  align-self: stretch;
-}
-
-.divided-panel {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 50vw;
-}
-
 .number-input .ui.small.input {
   width: 169px;
 }
@@ -88,18 +65,7 @@
   background-color: #0aa855!important;
 }
 
-.codemirror-source {
-  z-index: 1;
-  position: relative;
-  text-align: left;
-  width: 100%;
-}
-
-.codemirror-source > div {
-  height: auto;
-}
-
-.inform-export-options .ui.toggle.checkbox {
+.export-pane-options .ui.toggle.checkbox {
   width: 400px;
   text-align: left;
 }

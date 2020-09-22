@@ -8,6 +8,8 @@ const Home = lazy(() => import(/* webpackChunkName: "home" */'./pages/home'))
 const ExportMenu = lazy(() => import(/* webpackChunkName: "export-menu" */'./pages/export-menu'))
 const CreatePdf = lazy(() => import(/* webpackChunkName: "create-pdf" */'./pages/create-pdf'))
 const CreateInform = lazy(() => import(/* webpackChunkName: "create-inform" */'./pages/create-inform'))
+const CreateTwine = lazy(() => import(/* webpackChunkName: "create-twine" */'./pages/create-twine'))
+const CreateInk = lazy(() => import(/* webpackChunkName: "create-ink" */'./pages/create-ink'))
 
 const App = () => {
   return (  
@@ -18,6 +20,8 @@ const App = () => {
           <RouteWithStory path="/export" component={ ExportMenu } />
           <RouteWithStory path="/create-pdf" component={ CreatePdf } />
           <RouteWithStory path="/create-inform" component={ CreateInform } />
+          <RouteWithStory path="/create-twine" component={ CreateTwine } />
+          <RouteWithStory path="/create-ink" component={ CreateInk } />
           <Redirect to="/" />
         </Switch>
       </Suspense>

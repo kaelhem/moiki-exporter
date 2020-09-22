@@ -1,93 +1,107 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect } from 'react'
 import { bindActionCreators } from 'redux'
 import { connect } from 'react-redux'
 import { actions as informActions } from 'core/reducers/inform'
 import { Button, Icon, Input, Grid, Radio, Divider, Form } from 'semantic-ui-react'
 import SelectField from 'components/select-field'
-import { debounce } from 'utils/debounce'
 
-const Options = (props) => {
+const OptionsPane = (props) => {
   const {
     settings,
     updateSettings,
     resetDefault
   } = props
 
-  const [clsPattern, setClsPattern] = useState(settings.clsPattern)
-
-  const debounceCallback = useCallback(
-    debounce(value => {
-      updateSettings({clsPattern: value})
-    }, 300),
-    []
-  )
+  const [timeoutId, setTimeoutId] = useState(settings)
+  const [options, setOptions] = useState(settings)
 
   useEffect(() => {
-    setClsPattern(settings.clsPattern)
+    return () => {
+      clearTimeout(timeoutId)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    setOptions(settings)
   }, [settings])
 
-  const updateClsPattern = (_, {value}) => {
-    setClsPattern(value)
-    debounceCallback(value)
+  useEffect(() => {
+    if (JSON.stringify(settings) !== JSON.stringify(options)) {
+      //updateSettings(options)
+      clearTimeout(timeoutId)
+      setTimeoutId(setTimeout(() => updateSettings(options), 300))
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [options])
+
+  const update = (data) => {
+    setOptions({...options, ...data})
   }
 
   return (
-    <div className="export-buttons inform-export-options" style={{ width: 400, minHeight: 360, margin: 'auto' }}>
+    <div className="export-buttons export-pane-options" style={{ width: 400, minHeight: 360, margin: 'auto' }}>
       <Grid columns={2}>
+        <div>
+          <div>
+             <a target="_blank" rel="noopener noreferrer" href="https://www.inform-fiction.org/">Inform</a> is a programming language and design system for interactive fiction. Export your Moiki story in this format and compile it in z-code (v3, v5 or v8) to run on lots of retro computers!
+          </div>
+          <Divider style={{ marginBottom: 30 }} />
+        </div>
         <SelectField
           label="Lang"
-          value={settings.lang}
-          onChange={(value) => updateSettings({lang: value})}
+          value={options.lang}
+          onChange={(value) => update({lang: value})}
           options={['fr', 'en']}
         />
         <SelectField
           label="Encoding"
-          value={settings.encoding}
-          onChange={(value) => updateSettings({encoding: value})}
+          value={options.encoding}
+          onChange={(value) => update({encoding: value})}
           options={['latin1', 'utf8']}
         />
-        <div style={{ width: '100%', marginTop: 20 }}>
+        <div style={{ width: '100%' }}>
           <Divider horizontal>pauses and screen clearing</Divider>
         </div>
         <Radio
           toggle
           label="Add pause when win/lose items"
-          checked={!settings.disablePauseOnItems}
-          onChange={() => updateSettings({disablePauseOnItems: !settings.disablePauseOnItems})}
+          checked={!options.disablePauseOnItems}
+          onChange={() => update({disablePauseOnItems: !options.disablePauseOnItems})}
           style={{ margin: '.5em auto' }}
         />
         <Radio
           toggle
           label="Add pause after each text sequence"
-          checked={!settings.disablePauseOnSimpleSequence}
-          onChange={() => updateSettings({disablePauseOnSimpleSequence: !settings.disablePauseOnSimpleSequence})}
+          checked={!options.disablePauseOnSimpleSequence}
+          onChange={() => update({disablePauseOnSimpleSequence: !options.disablePauseOnSimpleSequence})}
           style={{ margin: '.5em auto' }}
         />
         <Radio
           toggle
           label="Add pause on game over"
-          checked={!settings.disablePauseOnGameOver}
-          onChange={() => updateSettings({disablePauseOnGameOver: !settings.disablePauseOnGameOver})}
+          checked={!options.disablePauseOnGameOver}
+          onChange={() => update({disablePauseOnGameOver: !options.disablePauseOnGameOver})}
           style={{ margin: '.5em auto' }}
         />
         <Radio
           toggle
           label="Clear screen (or separator) after choice selection"
-          checked={!settings.disableClearScreenOnChoice}
-          onChange={() => updateSettings({disableClearScreenOnChoice: !settings.disableClearScreenOnChoice})}
+          checked={!options.disableClearScreenOnChoice}
+          onChange={() => update({disableClearScreenOnChoice: !options.disableClearScreenOnChoice})}
           style={{ margin: '.5em auto' }}
         />
         <Radio
           toggle
           label="Prefer separators over screen clearing"
-          checked={settings.preferSeparatorThanCls}
-          onChange={() => updateSettings({preferSeparatorThanCls: !settings.preferSeparatorThanCls})}
+          checked={options.preferSeparatorThanCls}
+          onChange={() => update({preferSeparatorThanCls: !options.preferSeparatorThanCls})}
           style={{ margin: '.5em auto' }}
-          disabled={settings.disableClearScreenOnChoice}
+          disabled={options.disableClearScreenOnChoice}
         />
         <Form.Field inline style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           <label style={{ marginRight: 20, fontWeight: 'bold' }}>Separator pattern</label>
-          <Input style={{ flexGrow: 1 }} value={clsPattern} onChange={updateClsPattern} />
+          <Input style={{ flexGrow: 1 }} value={options.clsPattern} onChange={(_, {value}) => update({clsPattern: value})} />
         </Form.Field>
       </Grid>
       <Button onClick={resetDefault} style={{ marginTop: 30 }}>
@@ -105,4 +119,4 @@ const mapDispatchToProps = (dispatch) => ({
   updateSettings: bindActionCreators(informActions.updateSettings, dispatch),
   resetDefault: bindActionCreators(informActions.resetDefault, dispatch),
 })
-export default connect(mapStateToProps, mapDispatchToProps)(Options)
+export default connect(mapStateToProps, mapDispatchToProps)(OptionsPane)
