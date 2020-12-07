@@ -9,7 +9,7 @@ export const types = {
   lang: 'fr',
   encoding: 'latin1', // latin1 or utf8
   clsPattern: '--', // used in v3 as separator (because the lack of clear screen function)
-  disablePauseOnItems: false,
+  disablePauseOnActions: false,
   disablePauseOnSimpleSequence: false,
   disablePauseOnGameOver: false,
   disableClearScreenOnChoice: false,
