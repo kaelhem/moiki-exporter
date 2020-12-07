@@ -115,16 +115,19 @@ export const generatePdfStream = async (story, settings, pdfData=null) => {
   doc.moveDown()
 
   doc.font(font.REGULAR).fontSize(12)
-
-  try {
-    const imgWidth = doc.page.width - horizontalMargin - 100
-    const imgHeight = imgWidth * 3 / 4
-    const {datauri} = await getImageDataUri(meta.image, imgWidth, imgHeight)
-    doc.moveDown()
-    doc.image(datauri, {fit: [doc.page.width - horizontalMargin, imgHeight], align: 'center'})
-    doc.moveDown()
-  } catch (e) {
-    console.log(e)
+  if (meta.image) {
+    try {
+      const imgWidth = doc.page.width - horizontalMargin - 100
+      const imgHeight = imgWidth * 3 / 4
+      const {datauri} = await getImageDataUri(meta.image, imgWidth, imgHeight)
+      doc.moveDown()
+      doc.image(datauri, {fit: [doc.page.width - horizontalMargin, imgHeight], align: 'center'})
+      doc.moveDown()
+    } catch (e) {
+      console.log(e)
+    }
+  } else {
+    doc.moveDown(10)
   }
 
   doc.text(meta.description, {
@@ -158,6 +161,7 @@ export const generatePdfStream = async (story, settings, pdfData=null) => {
         height += doc.heightOfString(chain, {align: 'justify'})
         height += doc.currentLineHeight(true) * .5
       } else {
+        // TODO : MANAGE ACTION
         height += doc.currentLineHeight(true)
         height += 60
         height += doc.currentLineHeight(true) * .5
@@ -171,24 +175,40 @@ export const generatePdfStream = async (story, settings, pdfData=null) => {
       lastEntry.choices.forEach((choice, choiceIdx) => {
         height += doc.font(font.BOLD).heightOfString(choice.content)
         doc.font(font.ITALIC).fontSize(settings.fontSize < 12 ? settings.fontSize : 12)
-        if (choice.condition && choice.condition.next && choice.condition.params && getSequenceByIndex(choice.condition.next) !== getSequenceByIndex(choice.next)) {
-          height += doc.heightOfString(`Avec l'objet "${variables[choice.condition.params].desc.trim()}" : rendez-vous en ${getSequenceByIndex(choice.condition.next)} (p.${pageLinksMap[choice.condition.next] || 'XX'})`, { underline: true }) - 2
-          height += doc.heightOfString(`Sinon : rendez-vous en ${getSequenceByIndex(choice.next)} (p.${pageLinksMap[choice.next] || 'XX'})`, { underline: true})
-        } else {
+        let numCond = 0
+        if (choice.conditions && choice.conditions.length > 0) {
+          for (let c of choice.conditions) {
+            if (getSequenceByIndex(c.next) !== getSequenceByIndex(choice.next)) {
+              //height += doc.heightOfString(`Avec l'objet "${variables[choice.condition.params].desc.trim()}" : rendez-vous en ${getSequenceByIndex(choice.condition.next)} (p.${pageLinksMap[choice.condition.next] || 'XX'})`, { underline: true }) - 2
+              height += doc.heightOfString(`Should manage condition "${c.kind}" : rendez-vous en ${getSequenceByIndex(c.next)} (p.${pageLinksMap[c.next] || 'XX'})`, { underline: true }) - 2
+              ++numCond
+            }
+          }
+        }
+        if (numCond === 0) {
           height += doc.heightOfString(`Rendez-vous en ${getSequenceByIndex(choice.next)} (p.${pageLinksMap[choice.next] || 'XX'})`, { underline: true }) - 2
+        } else {
+          height += doc.heightOfString(`Sinon : rendez-vous en ${getSequenceByIndex(choice.next)} (p.${pageLinksMap[choice.next] || 'XX'})`, { underline: true})
         }
         doc.fontSize(settings.fontSize).font(font.REGULAR)
       })
     }
 
     // manage simple conditions
-    if (!hasChoices && lastEntry.condition && lastEntry.condition.params && lastEntry.condition.next) {
+    if (!hasChoices && lastEntry.conditions && lastEntry.conditions.length > 0) {
       doc.fontSize(settings.fontSize < 12 ? settings.fontSize : 12).font(font.ITALIC)
-      if (getSequenceByIndex(lastEntry.condition.next) !== getSequenceByIndex(lastEntry.next)) {
-        height += doc.heightOfString(`Avec l'objet "${variables[lastEntry.condition.params].desc.trim()}" : rendez-vous en ${getSequenceByIndex(lastEntry.condition.next)} (p.${pageLinksMap[lastEntry.condition.next] || 'XX'})`, { underline: true }) - 2
-        height += doc.heightOfString(`Sinon : rendez-vous en ${getSequenceByIndex(lastEntry.next)} (p.${pageLinksMap[lastEntry.next] || 'XX'})`, { underline: true })
-      } else {
+      let numCond = 0
+      for (let c of lastEntry.conditions) {
+        if (getSequenceByIndex(c.next) !== getSequenceByIndex(lastEntry.next)) {
+          //height += doc.heightOfString(`Avec l'objet "${variables[lastEntry.condition.params].desc.trim()}" : rendez-vous en ${getSequenceByIndex(lastEntry.condition.next)} (p.${pageLinksMap[lastEntry.condition.next] || 'XX'})`, { underline: true }) - 2
+          height += doc.heightOfString(`Should manage condition "${c.kind}" : rendez-vous en ${getSequenceByIndex(c.next)} (p.${pageLinksMap[c.next] || 'XX'})`, { underline: true }) - 2
+          ++numCond
+        }
+      }
+      if (numCond === 0) {
         height += doc.heightOfString(`Rendez-vous en ${getSequenceByIndex(lastEntry.next)} (p.${pageLinksMap[lastEntry.next] || 'XX'})`, { underline: true }) - 2
+      } else {
+        height += doc.heightOfString(`Sinon : rendez-vous en ${getSequenceByIndex(lastEntry.next)} (p.${pageLinksMap[lastEntry.next] || 'XX'})`, { underline: true })
       }
       doc.fontSize(settings.fontSize).font(font.REGULAR)
     }
@@ -221,7 +241,8 @@ export const generatePdfStream = async (story, settings, pdfData=null) => {
       if (typeof chain === 'string') {
         doc.text(chain, {align: 'justify'})
         doc.moveDown(.5)
-      } else {
+      } else if (chain.pngIcon) {
+        // TODO : MANAGE ACTION
         doc.moveDown()
         if (doc.y + 60 + settings.margins.bottom + 2 * doc.currentLineHeight(true) > doc.page.height) {
           doc.addPage()
@@ -231,6 +252,9 @@ export const generatePdfStream = async (story, settings, pdfData=null) => {
         doc.font(font.ITALIC).fillColor('#999').text(chain.desc.trim(), {align: 'center'})
         doc.font(font.REGULAR).fillColor('#000')
         doc.moveDown(1.5)
+      } else {
+        console.log('Dont know what to do with this chain:')
+        console.log(chain)
       }
     }
     // manage choices
@@ -238,8 +262,8 @@ export const generatePdfStream = async (story, settings, pdfData=null) => {
       let numLineForChoices = 0
       lastEntry.choices.forEach((choice, choiceIdx) => {
         ++numLineForChoices
-        if (choice.condition && choice.condition.next && choice.condition.params) {
-          numLineForChoices += 2
+        if (choice.conditions && choice.conditions.length > 0) {
+          numLineForChoices += choice.conditions.length + 1 //2
         } else {
           ++numLineForChoices
         }
@@ -247,14 +271,24 @@ export const generatePdfStream = async (story, settings, pdfData=null) => {
       if (doc.y + settings.margins.bottom + numLineForChoices * doc.currentLineHeight(true) > doc.page.height) {
         doc.addPage()
       }
-      lastEntry.choices.forEach((choice, choiceIdx) => {
+      lastEntry.choices.forEach((choice) => {
         doc.font(font.BOLD).text(choice.content, {align: 'center'}).font(font.ITALIC).fontSize(settings.fontSize < 12 ? settings.fontSize : 12).fillColor('#066ddd')
         const docX = doc.x
-        if (choice.condition && choice.condition.next && choice.condition.params && getSequenceByIndex(choice.condition.next) !== getSequenceByIndex(choice.next)) {
-          doc.text(`Avec l'objet "${variables[choice.condition.params].desc.trim()}" : rendez-vous en ${getSequenceByIndex(choice.condition.next)} (p.${pageLinksMap[choice.condition.next] || 'XX'})`, 0, doc.y - 2, { goTo: choice.condition.next, underline: true, align: 'center', width: doc.page.width })
-          doc.text(`Sinon : rendez-vous en ${getSequenceByIndex(choice.next)} (p.${pageLinksMap[choice.next] || 'XX'})`, 0, doc.y, { goTo: choice.next, underline: true, align: 'center', width: doc.page.width })
-        } else {
+        let numCond = 0
+        if (choice.conditions && choice.conditions.length) {
+          for (let c of choice.conditions) {
+            if (getSequenceByIndex(c.next) !== getSequenceByIndex(choice.next)) {
+              // TODO : MANAGE CONDITION
+              //doc.text(`Avec l'objet "${variables[choice.condition.params].desc.trim()}" : rendez-vous en ${getSequenceByIndex(choice.condition.next)} (p.${pageLinksMap[choice.condition.next] || 'XX'})`, 0, doc.y - 2, { goTo: choice.condition.next, underline: true, align: 'center', width: doc.page.width })
+              doc.text(`Should manage condition "${c.kind}" : rendez-vous en ${getSequenceByIndex(c.next)} (p.${pageLinksMap[c.next] || 'XX'})`, 0, doc.y - 2, { goTo: c.next, underline: true, align: 'center', width: doc.page.width })
+              ++numCond
+            }
+          }
+        }
+        if (numCond === 0) {
           doc.text(`Rendez-vous en ${getSequenceByIndex(choice.next)} (p.${pageLinksMap[choice.next] || 'XX'})`, 0, doc.y - 2, { goTo: choice.next, underline: true, align: 'center', width: doc.page.width })
+        } else {
+          doc.text(`Sinon : rendez-vous en ${getSequenceByIndex(choice.next)} (p.${pageLinksMap[choice.next] || 'XX'})`, 0, doc.y, { goTo: choice.next, underline: true, align: 'center', width: doc.page.width })
         }
         doc.fontSize(settings.fontSize).font(font.REGULAR).fillColor('#000')
         doc.x = docX
@@ -262,18 +296,25 @@ export const generatePdfStream = async (story, settings, pdfData=null) => {
     }
 
     // manage simple conditions
-    if (!hasChoices && lastEntry.condition && lastEntry.condition.params && lastEntry.condition.next) {
+    if (!hasChoices && lastEntry.conditions && lastEntry.conditions.length > 0) {
       const docX = doc.x
       doc.fontSize(settings.fontSize < 12 ? settings.fontSize : 12)
       if (doc.y + settings.margins.bottom + 2 * doc.currentLineHeight(true) > doc.page.height) {
         doc.addPage()
       }
       doc.font(font.ITALIC).fillColor('#066ddd')
-      if (getSequenceByIndex(lastEntry.condition.next) !== getSequenceByIndex(lastEntry.next)) {
-        doc.text(`Avec l'objet "${variables[lastEntry.condition.params].desc.trim()}" : rendez-vous en ${getSequenceByIndex(lastEntry.condition.next)} (p.${pageLinksMap[lastEntry.condition.next] || 'XX'})`, 0, doc.y - 2, { goTo: lastEntry.condition.next, underline: true, align: 'center', width: doc.page.width })
-        doc.text(`Sinon : rendez-vous en ${getSequenceByIndex(lastEntry.next)} (p.${pageLinksMap[lastEntry.next] || 'XX'})`, 0, doc.y, { goTo: lastEntry.next, underline: true, align: 'center', width: doc.page.width })
-      } else {
+      let numCond = 0
+      for (let c of lastEntry.conditions) {
+        if (getSequenceByIndex(c.next) !== getSequenceByIndex(lastEntry.next)) {
+          //doc.text(`Avec l'objet "${variables[lastEntry.condition.params].desc.trim()}" : rendez-vous en ${getSequenceByIndex(lastEntry.condition.next)} (p.${pageLinksMap[lastEntry.condition.next] || 'XX'})`, 0, doc.y - 2, { goTo: lastEntry.condition.next, underline: true, align: 'center', width: doc.page.width })
+          doc.text(`Should manage condition "${c.kind}" : rendez-vous en ${getSequenceByIndex(c.next)} (p.${pageLinksMap[c.next] || 'XX'})`, 0, doc.y - 2, { goTo: c.next, underline: true, align: 'center', width: doc.page.width })
+          ++numCond
+        }
+      }
+      if (numCond === 0) {
         doc.text(`Rendez-vous en ${getSequenceByIndex(lastEntry.next)} (p.${pageLinksMap[lastEntry.next] || 'XX'})`, 0, doc.y - 2, { goTo: lastEntry.next, underline: true, align: 'center', width: doc.page.width })
+      } else {
+        doc.text(`Sinon : rendez-vous en ${getSequenceByIndex(lastEntry.next)} (p.${pageLinksMap[lastEntry.next] || 'XX'})`, 0, doc.y, { goTo: lastEntry.next, underline: true, align: 'center', width: doc.page.width })
       }
       doc.fontSize(settings.fontSize).font(font.REGULAR).fillColor('#000')
       doc.x = docX
