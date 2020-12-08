@@ -1,4 +1,4 @@
-export const convertId = (id, prefix= 'story') => {
+export const convertId = (id, prefix = 'story') => {
   if (!id) {
     return null
   }

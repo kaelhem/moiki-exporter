@@ -74,11 +74,11 @@ export const convertToInform6 = (story, opts={}) => {
       sequenceUsedInConditions.push(...extractPassageFromConditions(sequence.conditions))
     }
   }
-  const passageVarsAsArray = [...(new Set(sequenceUsedInConditions))].map(x => convertId(x))
+  const uniquePassages = Array.from(new Set(sequenceUsedInConditions))
+  const passageVarsAsArray = uniquePassages.map(x => convertId(x))
   
 
   const convertObjectCondition = (condition, target) => {
-    console.log(condition, target)
     switch (condition) {
       case 'with': return `hasItem(${objectVariables[target].identifier})`
       case 'without': return `~~hasItem(${objectVariables[target].identifier})`
@@ -253,7 +253,6 @@ export const convertToInform6 = (story, opts={}) => {
         listVars.push('choice', 'numVisibleChoices')
         for (let choice of sequence.choices) {
           const choiceContent = cleanContent(choice.content)
-          console.log(choiceContent)
           const showCond = choice.showCondition && choice.showCondition.kind ? convertShowCondition(choice.showCondition) : false
           if (showCond) {
             choicesDescription.push(

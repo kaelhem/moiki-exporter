@@ -89,7 +89,6 @@ export const convertToInk = (story) => {
       case 'passage': return convertPassageCondition(condition, target)
       case 'multiple': {
         const multiCond = convertMultipleCondition(params)
-        console.log(multiCond)
         return multiCond && multiCond.length > 0 ? multiCond.join(operator === 'and' ? ' && ' : ' || ') : null
       }
       default: {
