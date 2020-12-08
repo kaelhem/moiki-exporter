@@ -65,7 +65,8 @@ export const simplifyStory = ({sequences, firstSequence, assets}, vars, cleanTex
               addLink(s.id, cond.next)
             }
           }
-        } else if (choice.next) {
+        }
+        if (choice.next) {
           addLink(s.id, choice.next)
         }
       }
@@ -76,7 +77,8 @@ export const simplifyStory = ({sequences, firstSequence, assets}, vars, cleanTex
             addLink(s.id, cond.next)
           }
         }
-      } else if (s.next) {
+      }
+      if (s.next) {
         addLink(s.id, s.next)
       }
     }
