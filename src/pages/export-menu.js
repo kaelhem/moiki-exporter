@@ -35,11 +35,13 @@ const ExportMenu = (props) => {
             <h2>{story.meta.name}</h2>
             <div><em>A story by {utils.getAuthor(story.meta)}</em></div>
           </Segment>
+          <Button as={Link} to='/create-inform'>Export to Inform6</Button>
           <Button as={Link} to='/create-ink'>Export to Inkle's ink</Button>
+          {/*
           <Button as={Link} to='/create-twine'>Export to Twee</Button>
-          <Button as={Link} to='/create-inform'>Export to Inform (<em>v6</em>)</Button>
           <Button as={Link} to='/create-jdrbot'>Export to JDR-Bot</Button>
-          <Button as={Link} to='/create-pdf'>Make PDF...</Button>
+          */}
+          <Button disabled={!story.meta.simplified} as={Link} to='/create-pdf'>Make PDF... {!story.meta.simplified && <Fragment><br/>(for simplified stories only...)</Fragment>}</Button>
           <Divider />
           <Button onClick={clear}>Import another story</Button>
         </div>

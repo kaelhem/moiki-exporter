@@ -1,3 +1,5 @@
+import { migrate } from 'moiki-exporter'
+
 export const types = {
   IMPORT: 'moiki-exp/story/IMPORT',
   IMPORT_SUCCESS: 'moiki-exp/story/IMPORT_SUCCESS',
@@ -32,7 +34,7 @@ export default function storyReducer(state = {}, action = {}) {
     case types.IMPORT_SUCCESS: {
       return {
         ...initialState,
-        story: action.payload
+        story: migrate(action.payload)
       }
     }
     case types.EXPORT: {

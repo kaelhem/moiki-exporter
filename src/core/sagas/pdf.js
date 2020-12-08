@@ -9,6 +9,7 @@ import { utils } from 'moiki-exporter'
 import clonedeep from 'lodash.clonedeep'
 import { cleanContent } from 'utils/pdf-story-utils'
 import { shuffleArray } from 'utils/functions-utils'
+import { push as navigateTo } from 'connected-react-router'
 
 const { simplifyStory } = utils
 
@@ -26,13 +27,17 @@ export function *initPdfSaga(action) {
   try {
     const story = yield select(storySelectors.story)
     const { meta, assets } = story
-    let variables = {}
-    for (let asset of assets) {
-      variables[asset.id] = asset
+    if (!meta.simplified) {
+      yield put(navigateTo('/export'))
+    } else {
+      let variables = {}
+      for (let asset of assets) {
+        variables[asset.id] = asset
+      }
+      const sequences = simplifyStory(clonedeep(story), variables, cleanContent)
+      const sequencesShuffle = shuffleSequences(sequences)
+      yield put(pdfActions.updateStory({meta, variables, sequences, sequencesShuffle}))
     }
-    const sequences = simplifyStory(clonedeep(story), variables, cleanContent)
-    const sequencesShuffle = shuffleSequences(sequences)
-    yield put(pdfActions.updateStory({meta, variables, sequences, sequencesShuffle}))
   } catch(e) {
     console.log(e)
     // maybe redirect on /export ?
