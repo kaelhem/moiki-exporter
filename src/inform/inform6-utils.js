@@ -1,5 +1,8 @@
 export const convertId = (id, prefix= 'story') => {
-  const pre =prefix ? prefix + '_' : ''
+  if (!id) {
+    return null
+  }
+  const pre = prefix ? prefix + '_' : ''
   return pre + id.replace(/-/gi, '_')
 }
 
@@ -13,14 +16,15 @@ export const cleanContent = (content) => {
     .replace(/<\/*p>/gi, '')
     .replace(/(<\/*(span)>)/gi, '')
     .replace(/(\s)+/gi, ' ')
-    .replace(/\@/gim, '@@64')
+    .replace(/©/gim, '(c)')
+    .replace(/@/gim, '@@64')
     .replace(/\^/gim, '@@94')
     .replace(/\\/gim, '@@92')
-    .replace(/\~/gim, '@@126')
+    .replace(/~/gim, '@@126')
     .replace(/°/gim, ' ') // FIXME! the @@225 code seems to not work (even with the "Zcharacter table + '@{00B0}';" directive)
     .replace(/\s*<br\s*\/*>(\s|&nbsp;)*/gi, '^')
     .replace(/(\s)*&nbsp;(\s)*/gi, ' ') // maybe: [unicode 160] ?
-    .replace(/(\"|“|”)/gim, '~')
+    .replace(/("|“|”)/gim, '~')
     .replace(/’/gim, '\'')
     .trim()
 }
@@ -29,7 +33,7 @@ export const informDefaultSettings = {
   lang: 'fr',
   encoding: 'utf8',
   clsPattern: '--', // used in v3 as separator (because the lack of clear screen function)
-  disablePauseOnItems: false,
+  disablePauseOnActions: false,
   disablePauseOnSimpleSequence: false,
   disablePauseOnGameOver: false,
   disableClearScreenOnChoice: false,
@@ -64,12 +68,16 @@ export const DEFAULT_STRINGS_FR = {
   INVENTORY_EMPTY: 'Votre inventaire est vide !',
   OBJECT_WON: 'Objet récupéré : ',
   OBJECT_LOST: 'Objet perdu : ',
+  COUNTER_SET: ' vaut maintenant : ',
+  COUNTER_ADD: ' augmente de ',
+  COUNTER_SUB: ' diminue de ',
   WIN_GAME: 'Gagné !',
   LOSE_GAME: 'Perdu !',
   COMMAND_UNKNOWN_LEFT: 'Cette commande est inconnue ! Tapez ~',
   COMMAND_UNKNOWN_RIGHT: '~ pour une liste des commandes disponibles.',
   DEFAULT_CONFIRM_MSG: `Etes-vous sûr de vouloir faire cette action ?`,
-  OR: ' ou ',
+  AND: 'et',
+  OR: 'ou',
   PLEASE_ANSWER: `Veuillez répondre par `,
   ANOTHER_GAME: `Lancer une autre partie ?`
 }
@@ -102,12 +110,16 @@ export const DEFAULT_STRINGS_EN = {
   INVENTORY_EMPTY: 'Inventory is empty!',
   OBJECT_WON: 'Item won : ',
   OBJECT_LOST: 'Item lost : ',
+  COUNTER_SET: ' is now: ',
+  COUNTER_ADD: ' increases by ',
+  COUNTER_SUB: ' decreases by ',
   WIN_GAME: 'Won!',
   LOSE_GAME: 'Lost!',
   COMMAND_UNKNOWN_LEFT: 'This command is unknown! Type ~',
   COMMAND_UNKNOWN_RIGHT: '~ for a list of available commands.',
   DEFAULT_CONFIRM_MSG: `Are you sure you want to take this action?`,
-  OR: ' or ',
+  AND: 'and',
+  OR: 'or',
   PLEASE_ANSWER: `Please answer `,
   ANOTHER_GAME: `Start another game?`
 }

@@ -1,5 +1,5 @@
 /**
-This export will not use any extra library, just Inform.
+This export will not use any extra library, just Inform (that means, there is no parser).
 
 TODO: 
 * add undo feature
@@ -10,36 +10,203 @@ import { getHeader, getAuthor } from '../utils'
 import * as informUtils from './inform6-utils'
 
 export const convertToInform6 = (story, opts={}) => {
-  const { _id, meta, firstSequence, sequences, assets } = story
+  const { _id, meta, firstSequence, sequences, assets, counters } = story
   const { convertId, cleanContent } = informUtils
   const settings = {...informUtils.informDefaultSettings, ...opts}
   const STRINGS = {...(settings.lang === 'fr' ? informUtils.DEFAULT_STRINGS_FR : informUtils.DEFAULT_STRINGS_EN), ...(settings.strings || {})}
 
   const writeStyle = (style, tabs=1) => `#IfV5; style ${style}; #EndIf;\n${'  '.repeat(tabs)}`
   const bold = (tabs) => writeStyle('bold', tabs)
-  const reverse = (tabs) => writeStyle('reverse', tabs)
+  //const reverse = (tabs) => writeStyle('reverse', tabs)
   const underline = (tabs) => writeStyle('underline', tabs)
   const roman = (tabs) => writeStyle('roman', tabs)
 
-  let variables = {}
+  const objectVariables = {}
   for (const [idx, asset] of assets.entries()) {
-    variables[asset.id] = {
+    objectVariables[asset.id] = {
       identifier: '_' + convertId(kebabCase(asset.label), '') + '_' + (idx + 1),
       ...asset
     }
   }
+  const objectVarsAsArray = Object.entries(objectVariables).map(([_, data]) => data)
 
-  const varsAsArray = Object.entries(variables).map(([_, data]) => data)
+  const counterVariables = {}
+  for (const [idx, counter] of counters.entries()) {
+    counterVariables[counter.id] = {
+      identifier: '_' + convertId(kebabCase(counter.name), '') + '_' + (idx + 1),
+      value: counter.defaultValue || 0,
+      ...counter
+    }
+  }
+  const counterVarsAsArray = Object.entries(counterVariables).map(([_, data]) => data)
 
-  const getChoiceLinkValue = (choice, variables) => {
-    if (choice.action && choice.action.params && typeof choice.action.params === 'string') {
+  const extractPassageFromConditions = (conditions) => {
+    const passages = []
+    if (conditions && conditions.length > 0) {
+      for (let c of conditions) {
+        const {kind, query: {params}} = c
+        if (kind === 'passage') {
+          const [{target}] = params
+          passages.push(target)
+        } else if (kind === 'multiple') {
+          for (let p of params) {
+            const {kind, target} = p
+            if (kind === 'passage') {
+              passages.push(target)
+            }
+          }
+        }
+      }
+    }
+    return passages
+  }
+
+  const sequenceUsedInConditions = []
+  for (let sequence of sequences) {
+    if (sequence.choices && sequence.choices.length > 0) {
+      for (let ch of sequence.choices) {
+        sequenceUsedInConditions.push(...extractPassageFromConditions(ch.conditions))
+        if (ch.showCondition && ch.showCondition.kind) {
+          sequenceUsedInConditions.push(...extractPassageFromConditions([ch.showCondition]))
+        }
+      }
+    } else {
+      sequenceUsedInConditions.push(...extractPassageFromConditions(sequence.conditions))
+    }
+  }
+  const passageVarsAsArray = [...(new Set(sequenceUsedInConditions))].map(x => convertId(x))
+  
+
+  const convertObjectCondition = (condition, target) => {
+    console.log(condition, target)
+    switch (condition) {
+      case 'with': return `hasItem(${objectVariables[target].identifier})`
+      case 'without': return `~~hasItem(${objectVariables[target].identifier})`
+      default: console.warn('This type of object condition is unknown:', condition)
+    }
+    return null
+  }
+
+  const convertCounterCondition = (condition, target, value) => {
+    if (isNaN(value) || typeof value !== 'number') {
+      console.warn('The value of this counter condition is invalid:', value)
+      return null
+    }
+    switch (condition) {
+      case '=': return `${counterVariables[target].identifier} == ${value}`
+      case '!=': return `${counterVariables[target].identifier} ~= ${value}`
+      case '<': case '<=': case '>': case '>=': {
+        return `${counterVariables[target].identifier} ${condition} ${value}`
+      }
+      default: console.warn('This type of counter condition is unknown:', condition)
+    }
+    return null
+  }
+
+  const convertPassageCondition = (condition, target) => {
+    switch (condition) {
+      case 'by': return `userPassages-->PSG_${convertId(target)} == 1`
+      case 'not-by': return `userPassages-->PSG_${convertId(target)} == 0`
+      default: console.warn('This type of passage condition is unknown:', condition)
+    }
+    return null
+  }
+
+  const convertMultipleCondition = (allConditions) => {
+    const res = []
+    for (let c of allConditions) {
+      const {kind, condition, target, value} = c
+      switch (kind) {
+        case 'object': res.push(convertObjectCondition(condition, target)); break
+        case 'counter': res.push(convertCounterCondition(condition, target, value)); break
+        case 'passage': res.push(convertPassageCondition(condition, target)); break
+        default: {
+          console.warn('This type of multiple condition is unknown:', kind)
+        }
+      }
+    }
+    return res.filter(x => x !== null).map(x => `(${x})`)
+  }
+
+  const convertShowCondition = (showCondition) => {
+    const {kind, query: {operator, params}} = showCondition
+    const [{target, condition, value}] = params
+    switch (kind) {
+      case 'object': return convertObjectCondition(condition, target)
+      case 'counter': return convertCounterCondition(condition, target, value)
+      case 'passage': return convertPassageCondition(condition, target)
+      case 'multiple': {
+        const multiCond = convertMultipleCondition(params)
+        const joiner = operator === 'and' ? ' && ' : ' || '
+        return multiCond ? multiCond.join(joiner) : null
+      }
+      default: {
+        console.warn('This kind of condition is unknown:', kind)
+      }
+    }
+  }
+
+  const convertConditions = (conditions) => {
+    const listConditions = []
+    for (let c of conditions) {
+      const {kind, next, query: {operator, params}} = c
+      const [{target, condition, value}] = params
+      switch (kind) {
+        case 'object': {
+          const objCondition = convertObjectCondition(condition, target)
+          objCondition && listConditions.push(`if (${objCondition}) return ${convertId(next)};`)
+          break
+        }
+        case 'counter': {
+          const counterCond = convertCounterCondition(condition, target, value)
+          counterCond && listConditions.push(`if (${counterCond}) return ${convertId(next)};`)
+          break
+        }
+        case 'passage': {
+          const psgCond = convertPassageCondition(condition, target)
+          psgCond && listConditions.push(`if (${psgCond}) return ${convertId(next)};`)
+          break
+        }
+        case 'multiple': {
+          const multiCond = convertMultipleCondition(params)
+          const joiner = operator === 'and' ? ' && ' : ' || '
+          multiCond && listConditions.push(`if (${multiCond.join(joiner)}) return ${convertId(next)};`)
+          break
+        }
+        default: {
+          console.warn('This kind of condition is unknown:', kind)
+        }
+      }
+    }
+    return listConditions
+  }
+
+  const convertActions = (actions) => {
+    const listActions = []
+    for (let act of actions) {
+      const {kind, params: {target, modifier, value}} = act
+      switch (kind) {
+        // modifier = toggle, add, sub
+        case 'object': listActions.push(`${modifier}Item(${objectVariables[target].identifier});`); break
+        // modifier = set, add, sub
+        case 'counter': listActions.push(`${modifier}Counter(${counterVariables[target].identifier}, ${value});`); break
+        default: {
+          console.warn('This kind of action is unknown:', kind)
+        }
+      }
+    }
+    return listActions
+  }
+
+  const getChoiceLinkValue = (choice) => {
+    if (choice.actions && choice.actions.length > 0) {
       return [
-        `toggleItem(${variables[choice.action.params].identifier});`,
+        ...convertActions(choice.actions),
         `return ${convertId(choice.next)};`
       ]
-    } else if (choice.condition && choice.condition.next && choice.condition.params) {
+    } else if (choice.conditions && choice.conditions.length > 0) {
       return [
-        `if (hasItem(${variables[choice.condition.params].identifier})) return ${convertId(choice.condition.next)};`,
+        ...convertConditions(choice.conditions),
         `return ${convertId(choice.next)};`
       ]
     } else {
@@ -49,23 +216,23 @@ export const convertToInform6 = (story, opts={}) => {
     }
   }
 
-  const getNodeDescription = (sequence, variables) => {
+  const getNodeDescription = (sequence) => {
     let statements = null
     const listVars = []
     const text = cleanContent(sequence.content)
     if (sequence.next && (!sequence.choices || sequence.choices.length === 0)) {
       // simple sequence
-      if (sequence.action && sequence.action.params && typeof sequence.action.params === 'string') {
+      if (sequence.actions && sequence.actions.length > 0) {
         statements = [
           `print "${text}^^";`,
-          `toggleItem(${variables[sequence.action.params].identifier});`,
+          ...convertActions(sequence.actions),
           `return ${convertId(sequence.next)};`
         ]
-      } else if (sequence.condition && sequence.condition.next && sequence.condition.params) {
+      } else if (sequence.conditions && sequence.conditions.length > 0) {
         statements = [
           `print "${text}";`,
           !settings.disablePauseOnSimpleSequence && `wait();`,
-          `if (hasItem(${variables[sequence.condition.params].identifier})) return ${convertId(sequence.condition.next)};`,
+          ...convertConditions(sequence.conditions),
           `return ${convertId(sequence.next)};`
         ]
       } else {
@@ -77,20 +244,52 @@ export const convertToInform6 = (story, opts={}) => {
       }
     } else if (sequence.choices && sequence.choices.length > 0) {
       // choice sequence
-      listVars.push('choice')
-      let choicesDescription = ''
+      const choicesDescription = []
       const choicesLinks = []
+      let mapLinks = []
       let choiceIndex = 0
-      for (let choice of sequence.choices) {
-        const choiceContent = cleanContent(choice.content)
-        choicesDescription += '- ' + (choiceIndex + 1) + '. ' + choiceContent + '^'
-        choicesLinks.push(getChoiceLinkValue(choice, variables))
-        ++choiceIndex
+      const hasShowConditions = sequence.choices.filter(c => c.showCondition && c.showCondition.kind).length > 0
+      if (hasShowConditions) {
+        listVars.push('choice', 'numVisibleChoices')
+        for (let choice of sequence.choices) {
+          const choiceContent = cleanContent(choice.content)
+          console.log(choiceContent)
+          const showCond = choice.showCondition && choice.showCondition.kind ? convertShowCondition(choice.showCondition) : false
+          if (showCond) {
+            choicesDescription.push(
+              `if (${showCond}) {`,
+              `  numVisibleChoices = numVisibleChoices + 1;`,
+              `  userChoices-->${(choiceIndex + 1)} = numVisibleChoices;`,
+              `  print "- (", numVisibleChoices, "). ${choiceContent}^";`,
+              `}`
+            )
+          } else {
+            choicesDescription.push(
+              `numVisibleChoices = numVisibleChoices + 1;`,
+              `userChoices-->${(choiceIndex + 1)} = numVisibleChoices;`,
+              `print "- (", numVisibleChoices, "). ${choiceContent}^";`
+            )
+          } 
+          choicesLinks.push(getChoiceLinkValue(choice))
+          ++choiceIndex
+        }
+        mapLinks = choicesLinks.map((link, i) => `if (choice == userChoices-->${(i + 1)}) {\n    ${link.join('\n    ')}\n  }`)
+      } else {
+        listVars.push('choice')
+        for (let choice of sequence.choices) {
+          const choiceContent = cleanContent(choice.content)
+          choicesDescription.push(`print "- ${(choiceIndex + 1)}. ${choiceContent}^";`)
+          choicesLinks.push(getChoiceLinkValue(choice))
+          ++choiceIndex
+        }
+        mapLinks = choicesLinks.map((link, i) => `if (choice == ${ i + 1 }) {\n    ${link.join('\n    ')}\n  }`)
       }
       statements = [
-        `print "${text}^^${choicesDescription}";`,
-        `choice = getInputChoice(${choicesLinks.length});`,
-        ...choicesLinks.map((link, i) => `if (choice == ${ i + 1 }) {\n    ${link.join('\n    ')}\n  }`)
+        `numVisibleChoices = 0;`,
+        `print "${text}^^";`,
+        ...choicesDescription,
+        `choice = getInputChoice(numVisibleChoices);`,
+        ...mapLinks
       ]
     } else {
       // final sequence
@@ -101,19 +300,15 @@ export const convertToInform6 = (story, opts={}) => {
         `return nothing;`
       ]
     }
+    const seqId = convertId(sequence.id)
+    if (passageVarsAsArray.includes(seqId)) {
+      statements = [`userPassages-->PSG_${seqId} = 1;`, ...statements]
+    }
+    
     return {
       statements: statements.filter(s => !!s).join('\n  '),
       vars: listVars
     }
-  }
-
-  // this helper method allows to construct the conditions checking user input (to match commands)
-  const getInputConditionFor = (str, lenVarName='len') => {
-    const matchChars = str.toLowerCase().split('').map((c, i) => {
-      const thisKey = i === 0 ? `key->arrayStartIndex` : `key->(arrayStartIndex+${i})`
-      return `${thisKey} == '${c}'`
-    }).join(' && ')
-    return `if (${lenVarName} == ${str.length} && ${matchChars}) {`
   }
 
   const onAfterChoice = settings.preferSeparatorThanCls ? 'print (string) CLS_PATTERN, "^";' : 'cls();'
@@ -137,57 +332,131 @@ Global markForRedo = 0; ! used to restart game from beginning
 Global markForShow = 0; ! used to re-display sequence text
 Global gameOver = 0;
 
-${ varsAsArray.length > 0 ? (
+#IfV3;
+  Constant ARRAY_LEN_OFFSET = 2;
+#IfNot;
+  Constant ARRAY_LEN_OFFSET = 3;
+#EndIf;
+
+! Choices management (used for visibility conditions of choices)
+! -------------------------------------------
+
+Constant MAX_CHOICES = 6;
+Array userChoices --> (ARRAY_LEN_OFFSET + MAX_CHOICES);
+
+[ clearChoices i;
+  for (i=1: i<=MAX_CHOICES: i++) {
+    userChoices-->i = 0;
+  }
+  return;
+];
+
+${ objectVarsAsArray.length > 0 ? (
 `! Items management
 ! -------------------------------------------
 
-#IfV3;
-  Array userItems->(2+COUNT_TOTAL_ITEMS);
-#IfNot;
-  Array userItems->(3+COUNT_TOTAL_ITEMS);
-#EndIf;
+Array userItems --> (ARRAY_LEN_OFFSET + COUNT_TOTAL_ITEMS);
 
 [ clearItems i;
-  for (i=1: i<=userItems->0: i++) {
-    userItems->i = 0;
+  for (i=1: i<=COUNT_TOTAL_ITEMS: i++) {
+    userItems-->i = 0;
   }
   return;
 ];
 
 [ addItem index;
-  userItems->index = 1;
+  if (userItems-->index == 0) {
+    toggleItem(index);
+  }
   return;
 ];
 
-[ removeItem index;
-  userItems->index = 0;
+[ subItem index;
+  if (userItems-->index == 1) {
+    toggleItem(index);
+  }
   return;
 ];
 
 [ hasItem index;
-  return userItems->index == 1;
+  return userItems-->index == 1;
 ];
 
 [ toggleItem index;
-  ${ bold() }if (userItems->index == 0) {
-    userItems->index = 1;
+  ${ bold() }if (userItems-->index == 0) {
+    userItems-->index = 1;
     ++status_field_1;
     print (string) STR_OBJECT_WON;
   } else {
-    userItems->index = 0;
+    userItems-->index = 0;
     --status_field_1;
     print (string) STR_OBJECT_LOST;
   }
   print (string) getItemDescription(index);
-  ${ roman() }${ !settings.disablePauseOnItems ? 'wait();\n  ' : '' }return;
+  ${ roman() }${ !settings.disablePauseOnActions ? 'wait();\n  ' : '' }return;
 ];
 
 [ countItems i count;
   count = 0;
   for (i=1: i<=COUNT_TOTAL_ITEMS: i++) {
-    if (userItems->i == 1) ++count;
+    if (userItems-->i == 1) ++count;
   }
   return count;
+];
+`) : ''}
+
+${ counterVarsAsArray.length > 0 ? (
+`! Counters management
+! -------------------------------------------
+
+Array userCounters --> (ARRAY_LEN_OFFSET + COUNT_TOTAL_COUNTERS);
+
+[ clearCounters i;
+  for (i=1: i<=COUNT_TOTAL_COUNTERS: i++) {
+    userCounters-->i = defaultCounterValue(i);
+  }
+  return;
+];
+
+[ setCounter index value;
+  userCounters-->index = value;
+  if (isCounterGauge(index)) {
+    ${ bold() }print (string) getCounterName(index), (string) STR_COUNTER_SET, value;
+    ${ roman() }${ !settings.disablePauseOnActions ? 'wait();\n  ' : '' }
+  }
+  return;
+];
+
+[ addCounter index value;
+  userCounters-->index = userCounters-->index + value;
+  if (isCounterGauge(index)) {
+    ${ bold() }print (string) getCounterName(index), (string) STR_COUNTER_ADD, value, " ", (string) STR_AND, (string) STR_COUNTER_SET, userCounters-->index;
+    ${ roman() }${ !settings.disablePauseOnActions ? 'wait();\n  ' : '' }
+  }
+  return;
+];
+
+[ subCounter index value;
+  userCounters-->index = userCounters-->index - value;
+  if (isCounterGauge(index)) {
+    ${ bold() }print (string) getCounterName(index), (string) STR_COUNTER_SUB, value, " ", (string) STR_AND, (string) STR_COUNTER_SET, userCounters-->index;
+    ${ roman() }${ !settings.disablePauseOnActions ? 'wait();\n  ' : '' }
+  }
+  return;
+];
+`) : ''}
+
+${ passageVarsAsArray.length > 0 ? (
+`! Passages management (for conditions only)
+! -------------------------------------------
+
+Array userPassages --> (ARRAY_LEN_OFFSET + COUNT_TOTAL_PASSAGES);
+
+[ clearPassages i;
+  for (i=1: i<=COUNT_TOTAL_PASSAGES: i++) {
+    userPassages-->i = 0;
+  }
+  return;
 ];
 `) : ''}
 
@@ -272,7 +541,7 @@ Array key -> 13;
       exit();
     } else if (isCommand(STR_CMD_SHOW)) {
       markForShow = 1;
-      return 0;${ varsAsArray.length > 0 ? '\n    } else if (isCommand(STR_CMD_LIST)) {\n      inventory();\n    ' : '' }
+      return 0;${ objectVarsAsArray.length > 0 ? '\n    } else if (isCommand(STR_CMD_LIST)) {\n      inventory();\n    ' : '' }
     } else {
       commandUnknown = true;
     }
@@ -302,7 +571,7 @@ Array key -> 13;
       done = true;
     }
     if (~~done) {
-      print (string) STR_PLEASE_ANSWER, (string) STR_CMD_YES, (string) STR_OR, (string) STR_CMD_NO,".^";
+      print (string) STR_PLEASE_ANSWER, (string) STR_CMD_YES, " ", (string) STR_OR, " ", (string) STR_CMD_NO,".^";
     }
   } until(done);
   return ok;
@@ -337,7 +606,7 @@ Array key -> 13;
   print "  - ", (string) STR_CMD_REDO, (string) STR_COLON, " ", (string) STR_RESTART_GAME, "^";
   print "  - ", (string) STR_CMD_SHOW, (string) STR_COLON, " ", (string) STR_RESHOW_TEXT, "^";
   print "  - ", (string) STR_CMD_EXIT, (string) STR_COLON, " ", (string) STR_QUIT, "^";
-  ${ varsAsArray.length > 0 ? 'print "  - ", (string) STR_CMD_LIST, (string) STR_COLON, " ", (string) STR_LIST_OBJECTS, "^";\n  ' : '' }rtrue;
+  ${ objectVarsAsArray.length > 0 ? 'print "  - ", (string) STR_CMD_LIST, (string) STR_COLON, " ", (string) STR_LIST_OBJECTS, "^";\n  ' : '' }rtrue;
 ];
 
 [ exit;
@@ -357,7 +626,7 @@ Array key -> 13;
   }
   rfalse;
 ];
-${ varsAsArray.length > 0 ? (`
+${ objectVarsAsArray.length > 0 ? (`
 [ inventory i;
   if (countItems() == 0) {
     print (string) STR_INVENTORY_EMPTY, "^";
@@ -417,8 +686,11 @@ ${ varsAsArray.length > 0 ? (`
     cls();
     replay = false;
     location = DefaultRoomForStatusBar; ! reset location (avoid compiler warning)
-    status_field_1 = 0; ! reset score counter
-    status_field_2 = 0; ! reset turns counter${ varsAsArray.length > 0 ? `\n    clearItems();` : '' }
+    status_field_1 = 0; ! reset score
+    status_field_2 = 0; ! reset turns
+    ${ objectVarsAsArray.length > 0 ? `clearItems();` : '' }
+    ${ counterVarsAsArray.length > 0 ? `clearCounters();` : '' }
+    ${ passageVarsAsArray.length > 0 ? `clearPassages();` : '' }
     mainLoop(firstSequence);
     if (markForRedo == 1) {
       markForRedo = 0;
@@ -453,26 +725,66 @@ Constant STORY_URL = "https://moiki.fr/story/${_id}";
 
 ! Strings
 ${Object.entries(STRINGS).filter(([key, value]) => {
-  return !(informUtils.stringsForItems.find(s => s === key) && varsAsArray.length === 0)
+  return !(informUtils.stringsForItems.find(s => s === key) && objectVarsAsArray.length === 0)
 }).map(([key, value]) => `Constant STR_${key} = "${value}";`).join('\n')}
 ! Config
 Constant CLS_PATTERN = "${settings.clsPattern.slice(0, 40).repeat(40).slice(0, 40)}";
 
-${ varsAsArray.length > 0 ? (`
-! Defines Objects / Heroes
+${ objectVarsAsArray.length > 0 ? (`
+! Defines objects / heroes
 !-------------------------------------------
-Constant COUNT_TOTAL_ITEMS = ${varsAsArray.length};
+Constant COUNT_TOTAL_ITEMS = ${objectVarsAsArray.length};
 
-${true && varsAsArray.map((v, i) => 'Constant ' + v.identifier + ' = ' + (i + 1) + ';').join('\n')}
+${true && objectVarsAsArray.map((v, i) => 'Constant ' + v.identifier + ' = ' + (i + 1) + ';').join('\n')}
 
 [ getItemDescription index;
   switch (index) {
-    ${true && varsAsArray.map(v => v.identifier + ': return "' + v.desc + '";').join('\n    ')}
+    ${true && objectVarsAsArray.map(v => v.identifier + ': return "' + v.label + ' - ~' + v.desc + '~";').join('\n    ')}
     default: return "";
   }
 ];
 
 `) : ''}
+
+${ counterVarsAsArray.length > 0 ? (`
+! Defines counters
+!-------------------------------------------
+Constant COUNT_TOTAL_COUNTERS = ${counterVarsAsArray.length};
+
+${true && counterVarsAsArray.map((v, i) => 'Constant ' + v.identifier + ' = ' + (i + 1) + ';').join('\n')}
+
+[ getCounterName index;
+  switch (index) {
+    ${true && counterVarsAsArray.map(v => v.identifier + ': return "' + v.name + '";').join('\n    ')}
+    default: return "Undefined counter";
+  }
+];
+
+[ defaultCounterValue index;
+  switch (index) {
+    ${true && counterVarsAsArray.map(v => v.identifier + ': return ' + (v.defaultValue || 0) + ';').join('\n    ')}
+    default: return 0;
+  }
+];
+
+[ isCounterGauge index;
+  switch (index) {
+    ${true && counterVarsAsArray.filter(v => v.gauge).map(v => v.identifier + ': rtrue;').join('\n    ')}
+    default: return false;
+  }
+];
+
+`) : ''}
+
+${ passageVarsAsArray.length > 0 ? (`
+! Defines passages (used only for conditions)
+!-------------------------------------------
+Constant COUNT_TOTAL_PASSAGES = ${passageVarsAsArray.length};
+
+${true && passageVarsAsArray.map((v, i) => 'Constant PSG_' + v + ' = ' + (i + 1) + ';').join('\n')}
+
+`) : ''}
+
 ! Include MoikInform library
 ! ------------------------------------------
 Include "moikinform";
@@ -489,7 +801,7 @@ Include "moikinform";
 ! ------------------------------------------
 `
   for (let sequence of sequences) {
-    const { statements, vars } = getNodeDescription(sequence, variables)
+    const { statements, vars } = getNodeDescription(sequence)
     moikiInformStory += `[ ${convertId(sequence.id)}${vars && vars.length > 0 ? ' ' + vars.join(' ') : ''};\n  ${statements}\n];\n\n`
   }
 

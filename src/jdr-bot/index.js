@@ -21,7 +21,8 @@ const cleanContent = content => (
 )
 
 export const convertToJdrBot = (story) => {
-  const { meta, firstSequence, sequences, assets, sounds } = story
+  const { meta, firstSequence, sequences, assets } = story
+   //const { sounds } = story
 
   const getSequenceByIndex = (id) => (sequences.findIndex(s => s.id === id) + 2)
 
