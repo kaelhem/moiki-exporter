@@ -11,6 +11,7 @@ import { saveAs } from 'file-saver'
 import kebabCase from 'lodash.kebabcase'
 import * as PDFViews from './pdf'
 import './page-options.css'
+import 'containers/export-page-layout.css'
 
 const STATUS = {
   UP_TO_DATE: 'upToDate',
