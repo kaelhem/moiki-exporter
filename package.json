@@ -1,6 +1,6 @@
 {
   "name": "moiki-exporter",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "A tool to export your stories made with Moiki to other formats",
   "author": "kaelhem",
   "license": "MIT",

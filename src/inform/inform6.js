@@ -273,6 +273,13 @@ export const convertToInform6 = (story, opts={}) => {
           ++choiceIndex
         }
         mapLinks = choicesLinks.map((link, i) => `if (choice == userChoices-->${(i + 1)}) {\n    ${link.join('\n    ')}\n  }`)
+        statements = [
+          `numVisibleChoices = 0;`,
+          `print "${text}^^";`,
+          ...choicesDescription,
+          `choice = getInputChoice(numVisibleChoices);`,
+          ...mapLinks
+        ]
       } else {
         listVars.push('choice')
         for (let choice of sequence.choices) {
@@ -282,14 +289,13 @@ export const convertToInform6 = (story, opts={}) => {
           ++choiceIndex
         }
         mapLinks = choicesLinks.map((link, i) => `if (choice == ${ i + 1 }) {\n    ${link.join('\n    ')}\n  }`)
+        statements = [
+          `print "${text}^^";`,
+          ...choicesDescription,
+          `choice = getInputChoice(${choicesLinks.length});`,
+          ...mapLinks
+        ]
       }
-      statements = [
-        `numVisibleChoices = 0;`,
-        `print "${text}^^";`,
-        ...choicesDescription,
-        `choice = getInputChoice(numVisibleChoices);`,
-        ...mapLinks
-      ]
     } else {
       // final sequence
       statements = [
