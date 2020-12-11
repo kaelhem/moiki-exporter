@@ -65,9 +65,9 @@ const OptionsPane = (props) => {
         </div>
         <Radio
           toggle
-          label="Add pause when win/lose items"
-          checked={!options.disablePauseOnItems}
-          onChange={() => update({disablePauseOnItems: !options.disablePauseOnItems})}
+          label="Add pause on actions (win/lose items, update counters...)"
+          checked={!options.disablePauseOnActions}
+          onChange={() => update({disablePauseOnActions: !options.disablePauseOnActions})}
           style={{ margin: '.5em auto' }}
         />
         <Radio

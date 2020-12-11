@@ -13,8 +13,8 @@ import { svgAsPngUri } from 'save-svg-as-png'
 import {
   convertToInk,
   convertToInform,
-  convertToTwee,
-  convertToJdrBot
+  //convertToTwee,
+  //convertToJdrBot
 } from 'moiki-exporter'
 
 import windows1252 from 'windows-1252'
@@ -104,11 +104,11 @@ export function *importSaga(action) {
 
 const getFormatManager = (format, opts) => {
   switch (format) {
-    case 'harlowe' : return { converter: s => convertToTwee(s, 'harlowe'), ext: 'twee' }
-    case 'sugarcube' : return { converter: s => convertToTwee(s, 'sugarcube'), ext: 'twee' }
+    //case 'harlowe' : return { converter: s => convertToTwee(s, 'harlowe'), ext: 'twee' }
+    //case 'sugarcube' : return { converter: s => convertToTwee(s, 'sugarcube'), ext: 'twee' }
+    //case 'jdrbot' : return { converter: convertToJdrBot, ext: 'txt' }
     case 'ink' : return { converter: convertToInk, ext: 'ink' }
     case 'inform6' : return { converter: s => convertToInform(s, 'inform6', opts), ext: 'zip' }
-    case 'jdrbot' : return { converter: convertToJdrBot, ext: 'txt' }
     default:
       throw new Error('format invalid')
   }
