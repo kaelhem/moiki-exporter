@@ -33,7 +33,7 @@ export const getAuthor = (story) => {
     * chainedContent: an array with either : 
       + cumulated text of the chained sequences (as strings)
       + object that corresponding to won objects
-      ex.: ['text of several sequences', {pngIcon, desc}, 'text of following sequences']
+      ex.: ['text of several sequences', {sequenceAction}, 'text of following sequences']
 
   /!\ this method is destructive for the sequences object pass in. You should use a deep copy to keep you data untouched.
 */
@@ -59,16 +59,24 @@ export const simplifyStory = ({sequences, firstSequence, assets}, vars, cleanTex
     if (s.choices && s.choices.length > 0) {
       for (let choice of s.choices) {
         choice.content = cleanTextFn(choice.content)
-        if (choice.condition && choice.condition.next && choice.condition.params) {
-          addLink(s.id, choice.condition.next)
+        if (choice.conditions && choice.conditions.length > 0) {
+          for (let cond of choice.conditions) {
+            if (cond.next) {
+              addLink(s.id, cond.next)
+            }
+          }
         }
         if (choice.next) {
           addLink(s.id, choice.next)
         }
       }
     } else {
-      if (s.condition && s.condition.next && s.condition.params) {
-        addLink(s.id, s.condition.next)
+      if (s.conditions && s.conditions.length > 0) {
+        for (let cond of s.conditions) {
+          if (cond.next) {
+            addLink(s.id, cond.next)
+          }
+        }
       }
       if (s.next) {
         addLink(s.id, s.next)
@@ -92,22 +100,22 @@ export const simplifyStory = ({sequences, firstSequence, assets}, vars, cleanTex
     }
     chap.chain = chain
 
-    const chainWithObjects = []
+    const chainWithActions = []
     for (let node of chain) {
-      chainWithObjects.push(node)
-      if (node.action && node.action.params && typeof node.action.params === 'string') {
-        chainWithObjects.push({objectAction: vars[node.action.params]})
+      chainWithActions.push(node)
+      if (node.actions && node.actions.length === 1 && node.actions[0] && node.actions[0].params) {
+        chainWithActions.push({objectAction: vars[node.actions[0].params.target], kind: node.actions[0].kind})
       }
     }
     const chainSum = []
     let contentSum = ''
-    for (let chainObj of chainWithObjects) {
+    for (let chainObj of chainWithActions) {
       if (chainObj.objectAction) {
         if (contentSum) {
           chainSum.push(contentSum.replace(/(\s)*<br(\s)*\/>(\s)*/gi, '\u000D\u000A').trim())
           contentSum = ''
         }
-        chainSum.push(chainObj.objectAction)
+        chainSum.push({...chainObj.objectAction, actionKind: chainObj.kind})
       } else {
         contentSum += cleanTextFn(chainObj.content) + ' '
       }
