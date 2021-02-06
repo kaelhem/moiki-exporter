@@ -16,7 +16,7 @@ Export formats:
 _Inform export has some options_
 
 ![](https://raw.githubusercontent.com/kaelhem/moiki-exporter/website/public/screenshots/export-pdf.png)
-_Wigh the PDF export, transform your story in CYOA interactive book!_
+_With the PDF export, transform your story in CYOA interactive book!_
 
 
 ## Howto
