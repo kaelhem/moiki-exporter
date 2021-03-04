@@ -5,17 +5,6 @@ export const types = {
   RESET_SETTINGS: 'moiki-exp/inform/RESET_SETTINGS',
 }
 
-/*
-  lang: 'fr',
-  encoding: 'latin1', // latin1 or utf8
-  clsPattern: '--', // used in v3 as separator (because the lack of clear screen function)
-  disablePauseOnActions: false,
-  disablePauseOnSimpleSequence: false,
-  disablePauseOnGameOver: false,
-  disableClearScreenOnChoice: false,
-  preferSeparatorThanCls: false
-*/
-
 const initialState = {
   settings: {
     ...inform6Utils.informDefaultSettings

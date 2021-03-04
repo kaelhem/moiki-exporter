@@ -71,17 +71,18 @@ export function *importJson(data) {
 
 export function *importTwine(name, content) {
   try {
-    const response = yield fetch('/.netlify/functions/import-from-twine', {
+    const response = yield fetch('/.netlify/functions/import-from-twine2', {
       method: 'post',
       body: JSON.stringify({name, content})
     })
     const story = yield response.json()
-    const blob = new Blob([JSON.stringify(story, null, 4)], {type: 'text/plain;charset=utf-8'})
-    saveAs(blob, 'twine-import.json')
+    //const blob = new Blob([JSON.stringify(story, null, 4)], {type: 'text/plain;charset=utf-8'})
+    //saveAs(blob, 'twine-import.json')
+    console.log(story)
     yield put(storyActions.clear())
   } catch (e) {
     console.log(e)
-    yield put(storyMessages.exportError('Oops, there is a bug :-('))
+    yield put(storyMessages.importError('Oops, there is a bug :-('))
   }
 }
 

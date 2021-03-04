@@ -1,11 +1,12 @@
 {
   "name": "moiki-exporter-website",
-  "version": "0.1.0",
-  "proxy": "http://localhost:8888",
+  "version": "2.0.4",
+  "proxy": "http://localhost:9000",
   "private": true,
   "scripts": {
-    "start": "react-scripts start",
+    "start": "run-p start:**",
     "start:lambda": "netlify-lambda serve src/lambda",
+    "start:client": "react-scripts start",
     "build": "run-p build:**",
     "build:app": "react-scripts build",
     "build:lambda": "netlify-lambda build src/lambda",
@@ -22,7 +23,7 @@
     "jszip-utils": "^0.1.0",
     "lodash.clonedeep": "^4.5.0",
     "lodash.kebabcase": "^4.1.1",
-    "moiki-exporter": "2.0.3",
+    "moiki-exporter": "2.0.4",
     "moment": "^2.26.0",
     "pdfkit": "^0.11.0",
     "react": "^16.13.1",
@@ -49,7 +50,7 @@
     "@testing-library/jest-dom": "^4.2.4",
     "@testing-library/react": "^9.5.0",
     "@testing-library/user-event": "^7.2.1",
-    "netlify-lambda": "^2.0.1",
+    "netlify-lambda": "^2.0.2",
     "npm-run-all": "^4.1.5",
     "react-scripts": "3.4.1"
   },

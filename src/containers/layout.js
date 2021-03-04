@@ -22,7 +22,7 @@ const Layout = ({ children }) => {
       </div>
       <ZipWarning />
       <div className="app-footer" style={{ height: FOOTER_HEIGHT, overflowY: 'hidden' }}>
-        <div>Moiki Exporter - v{version} {'//'} kaelhem ©2020</div>
+        <div>Moiki Exporter - v{version} {'//'} kaelhem ©2021</div>
       </div>
       <ForkMeOnGithub
         colorBackground="#246b44"

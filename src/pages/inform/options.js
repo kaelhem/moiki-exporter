@@ -54,12 +54,12 @@ const OptionsPane = (props) => {
           onChange={(value) => update({lang: value})}
           options={['fr', 'en']}
         />
-        <SelectField
+        {/*<SelectField
           label="Encoding"
           value={options.encoding}
           onChange={(value) => update({encoding: value})}
           options={['latin1', 'utf8']}
-        />
+        />*/}
         <div style={{ width: '100%' }}>
           <Divider horizontal>pauses and screen clearing</Divider>
         </div>
