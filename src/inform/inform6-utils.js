@@ -125,3 +125,5 @@ export const DEFAULT_STRINGS_EN = {
 }
 
 export const stringsForItems = ['INVENTORY_EMPTY', 'INVENTORY_LIST', 'CMD_LIST', 'LIST_OBJECTS', 'OBJECT_WON', 'OBJECT_LOST']
+
+export const SPECIAL_CHARS = ['…', 'ō', '⨭', '⨮', '☼', '¤', '×', '♦', '█', '■', '▄', '▲', '▓', '♥', '◄']

@@ -11,8 +11,8 @@ import * as informUtils from './inform6-utils'
 
 export const convertToInform6 = (story, opts={}) => {
   const { _id, meta, firstSequence, sequences, assets, counters } = story
-  const { convertId, cleanContent } = informUtils
-  const settings = {...informUtils.informDefaultSettings, ...opts}
+  const { convertId: idConverter, cleanContent: contentCleaner, SPECIAL_CHARS } = informUtils
+  const settings = {...informUtils.informDefaultSettings, ...opts, lang: meta.lang === 'fr' ? 'fr' : 'en'}
   const STRINGS = {...(settings.lang === 'fr' ? informUtils.DEFAULT_STRINGS_FR : informUtils.DEFAULT_STRINGS_EN), ...(settings.strings || {})}
 
   const writeStyle = (style, tabs=1) => `#IfV5; style ${style}; #EndIf;\n${'  '.repeat(tabs)}`
@@ -20,6 +20,54 @@ export const convertToInform6 = (story, opts={}) => {
   //const reverse = (tabs) => writeStyle('reverse', tabs)
   const underline = (tabs) => writeStyle('underline', tabs)
   const roman = (tabs) => writeStyle('roman', tabs)
+
+  /*
+  @overriding cleanContent
+  This part allows to manage special chars that need to be declared in Ztable
+  */
+  const specialChars = new Set([])
+  const cleanContent = (str) => {
+    const cleaned = contentCleaner(str)
+    let charCode
+    for (let chr of cleaned) {
+      charCode = chr.charCodeAt(0)
+      if (charCode > 127) {
+        specialChars.add(charCode.toString(16))
+      }
+    }
+    return cleaned
+  }
+  const writeSpecialCharsRoutine = () => {
+    const specialCharsArray = Array.from(specialChars)
+    if (specialCharsArray.length > 0) {
+      return `\nZcharacter table ${specialCharsArray.map(x => `'@{${x}}'`).join(' ')};\n`
+    } else {
+      return ''
+    }
+  }
+
+  /*
+  @overriding convertId
+  This part allows to fix issue for names that exceeds the maximum length of 32 characters
+  */
+  const cuttedIds = {}
+  const sliceIndexes = {}
+  const convertId = (id, prefix) => {
+    const convertedId = idConverter(id, prefix)
+    if (convertedId.length >= 20) {
+      if (!cuttedIds[convertedId]) {
+        const slicedId = convertedId.slice(0, 18) + '_C'
+        if (!sliceIndexes[slicedId]) {
+          sliceIndexes[slicedId] = 1
+        } else {
+          sliceIndexes[slicedId] = (sliceIndexes[slicedId] + 1)
+        }
+        cuttedIds[convertedId] = slicedId + sliceIndexes[slicedId]
+      }
+      return cuttedIds[convertedId]
+    }
+    return convertedId
+  }
 
   const objectVariables = {}
   for (const [idx, asset] of assets.entries()) {
@@ -319,7 +367,7 @@ export const convertToInform6 = (story, opts={}) => {
   const onAfterChoice = settings.preferSeparatorThanCls ? 'print (string) CLS_PATTERN, "^";' : 'cls();'
 
   const moikiInformLibrary = `! This file contains the necessary core for the Moiki export to Inform6
-! kaelhem (c) 2020
+! kaelhem (c) 2021
 ! kaelhem at gmail com
 
 
@@ -713,7 +761,7 @@ ${ objectVarsAsArray.length > 0 ? (`
   const encoding = settings.encoding === 'utf8' ? '!% -Cu\n' : ''
   let moikiInformStory = `${encoding}!% -~S
 !% $OMIT_UNUSED_ROUTINES=1
-
+%%SPECIAL_CHARS%%
 ! ${getHeader(_id).split('\n').join('\n! ')}
 
 ! author: ${getAuthor(meta)}
@@ -744,7 +792,7 @@ ${true && objectVarsAsArray.map((v, i) => 'Constant ' + v.identifier + ' = ' + (
 
 [ getItemDescription index;
   switch (index) {
-    ${true && objectVarsAsArray.map(v => v.identifier + ': return "' + v.label + ' - ~' + v.desc + '~";').join('\n    ')}
+    ${true && objectVarsAsArray.map(v => v.identifier + ': return "' + cleanContent(v.label) + ' - ~' + cleanContent(v.desc) + '~";').join('\n    ')}
     default: return "";
   }
 ];
@@ -809,9 +857,8 @@ Include "moikinform";
     const { statements, vars } = getNodeDescription(sequence)
     moikiInformStory += `[ ${convertId(sequence.id)}${vars && vars.length > 0 ? ' ' + vars.join(' ') : ''};\n  ${statements}\n];\n\n`
   }
-
   return [
-    { filename: 'story.inf', data: moikiInformStory },
+    { filename: 'story.inf', data: moikiInformStory.replace('%%SPECIAL_CHARS%%', writeSpecialCharsRoutine()) },
     { filename: 'moikinform.h', data: moikiInformLibrary }
   ]
 }
