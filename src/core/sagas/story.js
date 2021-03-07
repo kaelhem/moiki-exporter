@@ -126,7 +126,7 @@ export function *exportSaga(action) {
       const zip = new JSZip()
       for (let f of files) {
         if (options.encoding === 'latin1') {
-          zip.file(f.filename, windows1252.encode(f.data), {binary: true})
+          zip.file(f.filename, windows1252.encode(f.data, {mode: 'html'}), {binary: true})
         } else {
           zip.file(f.filename, f.data)
         }

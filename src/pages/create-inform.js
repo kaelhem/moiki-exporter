@@ -25,7 +25,7 @@ const CreateInform = (props) => {
   }, [story, settings])
 
   const withEncoding = (data) => {
-    return settings.encoding === 'utf8' ? data : windows1252.encode(data)
+    return settings.encoding === 'utf8' ? data : windows1252.encode(data, {'mode': 'html'})
   }
 
   const layoutProps = {

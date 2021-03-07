@@ -54,12 +54,25 @@ const OptionsPane = (props) => {
           onChange={(value) => update({lang: value})}
           options={['fr', 'en']}
         />
-        {/*<SelectField
+        <SelectField
           label="Encoding"
           value={options.encoding}
           onChange={(value) => update({encoding: value})}
           options={['latin1', 'utf8']}
-        />*/}
+        />
+        <div class="row">
+          <div class="six wide column field-label">
+            <b>Use ASCII chars only</b>
+          </div>
+          <div class="ten wide column">
+            <Radio
+              toggle
+              checked={options.asciiOnly}
+              onChange={() => update({asciiOnly: !options.asciiOnly})}
+              style={{ margin: '0 auto' }}
+            />
+          </div>
+        </div>
         <div style={{ width: '100%' }}>
           <Divider horizontal>pauses and screen clearing</Divider>
         </div>

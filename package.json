@@ -1,6 +1,6 @@
 {
   "name": "moiki-exporter-website",
-  "version": "2.0.4",
+  "version": "2.0.5",
   "proxy": "http://localhost:9000",
   "private": true,
   "scripts": {
@@ -23,7 +23,7 @@
     "jszip-utils": "^0.1.0",
     "lodash.clonedeep": "^4.5.0",
     "lodash.kebabcase": "^4.1.1",
-    "moiki-exporter": "2.0.4",
+    "moiki-exporter": "2.0.5",
     "moment": "^2.26.0",
     "pdfkit": "^0.11.0",
     "react": "^16.13.1",
