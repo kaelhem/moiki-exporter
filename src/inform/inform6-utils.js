@@ -26,12 +26,14 @@ export const cleanContent = (content) => {
     .replace(/(\s)*&nbsp;(\s)*/gi, ' ') // maybe: [unicode 160] ?
     .replace(/("|“|”)/gim, '~')
     .replace(/’/gim, '\'')
+    .replace(/…/gim, '...')
     .trim()
 }
 
 export const informDefaultSettings = {
   lang: 'fr',
   encoding: 'utf8',
+  asciiOnly: true,
   clsPattern: '--', // used in v3 as separator (because the lack of clear screen function)
   disablePauseOnActions: false,
   disablePauseOnSimpleSequence: false,

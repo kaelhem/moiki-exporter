@@ -28,19 +28,28 @@ export const convertToInform6 = (story, opts={}) => {
   const specialChars = new Set([])
   const cleanContent = (str) => {
     const cleaned = contentCleaner(str)
+    let cleanedAndConverted = settings.asciiOnly ? '' : cleaned
     let charCode
     for (let chr of cleaned) {
       charCode = chr.charCodeAt(0)
-      if (charCode > 127) {
+      if (charCode > 255 && !settings.asciiOnly) {
         specialChars.add(charCode.toString(16))
+      } else if (settings.asciiOnly) {
+        if (charCode > 127 && charCode < 255) {
+          specialChars.add(charCode.toString(16))
+          cleanedAndConverted += chr
+        } else {
+          cleanedAndConverted += charCode > 255 ? '?' : chr
+        }
       }
     }
-    return cleaned
+    return cleanedAndConverted
   }
   const writeSpecialCharsRoutine = () => {
     const specialCharsArray = Array.from(specialChars)
+    const zCharTableKind = settings.asciiOnly ? 'Zcharacter table +' : 'Zcharacter table'
     if (specialCharsArray.length > 0) {
-      return `\nZcharacter table ${specialCharsArray.map(x => `'@{${x}}'`).join(' ')};\n`
+      return `\n${zCharTableKind} ${specialCharsArray.map(x => `'@{${x}}'`).join(' ')};\n`
     } else {
       return ''
     }
