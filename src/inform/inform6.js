@@ -12,7 +12,7 @@ import * as informUtils from './inform6-utils'
 export const convertToInform6 = (story, opts={}) => {
   const { _id, meta, firstSequence, sequences, assets, counters } = story
   const { convertId: idConverter, cleanContent: contentCleaner, SPECIAL_CHARS } = informUtils
-  const settings = {...informUtils.informDefaultSettings, ...opts, lang: meta.lang === 'fr' ? 'fr' : 'en'}
+  const settings = {...informUtils.informDefaultSettings, ...opts}
   const STRINGS = {...(settings.lang === 'fr' ? informUtils.DEFAULT_STRINGS_FR : informUtils.DEFAULT_STRINGS_EN), ...(settings.strings || {})}
 
   const writeStyle = (style, tabs=1) => `#IfV5; style ${style}; #EndIf;\n${'  '.repeat(tabs)}`
