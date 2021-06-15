@@ -1,5 +1,6 @@
 import kebabCase from 'lodash.kebabcase'
 import { parseHTML } from 'twine-parser'
+import { harloweHelper, sugarcubeHelper } from './twine-formats'
 
 const extractVars = (str) => {
   return str.match(/\([s|S]et:\s*\$([a-zA-Z0-9_.]+)\sto\s(.+)\)/gim)
@@ -32,12 +33,74 @@ const cleanText = (txt) => {
   return cleaned
 }
 
-const convertPassageToSequence = (passage) => {
-  const {name, text, links} = passage
+const getStoryFormat = (content) => {
+  const storyFormat = { format: null, version: null }
+  const storyTag = /<tw-storydata(.+?)>/.exec(content)
+  const strStoryTag = storyTag && storyTag.length > 1 ? storyTag[1] : null
+  const formatAttr = /format="(.+?)"/.exec(strStoryTag)
+  const versionAttr = /format-version="(.+?)"/.exec(strStoryTag)
+  if (formatAttr && formatAttr.length > 0) {
+    storyFormat.format = formatAttr[1]
+  }
+  if (versionAttr && versionAttr.length > 0) {
+    storyFormat.version = versionAttr[1]
+  }
+  return storyFormat
+}
+
+const convertTwineStatement = (statement, storyFormat) => {
+  const format = storyFormat.format ? storyFormat.format.toLowerCase() : null
+  switch (format) {
+    case 'harlowe': return harloweHelper.convertStatement(statement)
+    case 'sugarcube': return sugarcubeHelper.convertStatement(statement)
+    default: return {
+      raw: statement,
+      kind: 'text',
+      data: {}
+    }
+  }
+}
+
+const convertPassageToSequence = (passage, storyFormat) => {
+  const {name, text} = passage
+  const statements = text.split('\n')
+  const content = []
+  const links = []
+  const vars = []
+  const convertedStatements = []
+  const errors = []
+  for (let statement of statements) {
+    const convertedStatement = convertTwineStatement(statement, storyFormat)
+    convertedStatements.push(convertedStatement)
+    const { kind, raw, data } = convertedStatement
+    switch (kind) {
+      case 'text': content.push(raw); break
+      case 'link': links.push(data); break
+      case 'vars': vars.push(data); break
+      default: {
+        errors.push({message: 'Don\'t know what to do with this statement: ' + raw, statement, passage})
+      }
+    }
+  }
   return {
     id: kebabCase(name),
-    content: text.split('\n'),
-    links
+    content: content.join('\n'),
+    convertedStatements,
+    vars,
+    choices: links && links.length > 0 ? links.map(l => ({
+      content: cleanText(l.content),
+      next: kebabCase(l.next),
+      showCondition: l.condition ? {
+        kind: 'counter',
+        query: {
+          params: [{
+            target: '',
+            condition: '',
+            value: 0
+          }]
+        }
+      } : null
+    })) : []
   }
   return {
     id: kebabCase(name),
@@ -69,6 +132,8 @@ export async function handler(event, data) {
   const extracter = regexp.exec(jsonBody.content)
   const startNode = extracter && extracter.length > 1 ? extracter[1] : null
 
+  const storyFormat = getStoryFormat(jsonBody.content)
+
   try {
     const twine = parseHTML(jsonBody.content)
     const excludedPassages = [
@@ -88,7 +153,7 @@ export async function handler(event, data) {
       assets: [],
       sounds: []
     }
-    moikiStory.sequences = passages.map(convertPassageToSequence)
+    moikiStory.sequences = passages.map(p => convertPassageToSequence(p, storyFormat))
     return {
       statusCode: 200,
       body: JSON.stringify(moikiStory.sequences)//{...moikiStory, firstSequence: startSequence || moikiStory.sequences[0].id})

@@ -60,11 +60,11 @@ const OptionsPane = (props) => {
           onChange={(value) => update({encoding: value})}
           options={['latin1', 'utf8']}
         />
-        <div class="row">
-          <div class="six wide column field-label">
+        <div className="row">
+          <div className="six wide column field-label">
             <b>Use ASCII chars only</b>
           </div>
-          <div class="ten wide column">
+          <div className="ten wide column">
             <Radio
               toggle
               checked={options.asciiOnly}
