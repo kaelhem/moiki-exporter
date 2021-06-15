@@ -277,7 +277,24 @@ export const convertToInform6 = (story, opts={}) => {
     let statements = null
     const listVars = []
     const text = cleanContent(sequence.content)
-    if (sequence.next && (!sequence.choices || sequence.choices.length === 0)) {
+    if (sequence.puzzle) {
+      listVars.push('code')
+      // puzzle sequence 
+      const codesCheck = []
+      for (let code of sequence.puzzle.codes) {
+        codesCheck.push(
+          `if (isCommand("${code.value}")) {`,
+          `  return ${convertId(code.next)};`,
+          `}`
+        )
+      }
+      statements = [
+        `print "${text}";`,
+        `code = getInputCode();`,
+        ...codesCheck,
+        `return ${convertId(sequence.puzzle.defaultNext)};`
+      ]
+    } else if (sequence.next && (!sequence.choices || sequence.choices.length === 0)) {
       // simple sequence
       if (sequence.actions && sequence.actions.length > 0) {
         statements = [
@@ -574,6 +591,14 @@ Array userPassages --> (ARRAY_LEN_OFFSET + COUNT_TOTAL_PASSAGES);
 
 ! store user input
 Array key -> 13;
+
+! read user code
+[ getInputCode numChoices len chNum commandUnknown done;
+  do {
+    print "> ";
+  } until(KeyLine(key)-->0);
+  return key;
+];
 
 ! read user choices / menu commands
 [ getInputChoice numChoices len chNum commandUnknown done;

@@ -228,7 +228,9 @@ ${getHeader(_id)}
     const text = cleanContent(sequence.content)
     result += '\n=== ' + convertId(sequence.id) + ' ===\n'
     result += text + '\n'
-    if (sequence.choices && sequence.choices.length > 0) {
+    if (sequence.puzzle) {
+      // TODO !
+    } else if (sequence.choices && sequence.choices.length > 0) {
       for (let choice of sequence.choices) {
         let actions = ' '
         if (choice.actions && choice.actions.length > 0) {
