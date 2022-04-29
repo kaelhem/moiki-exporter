@@ -55,7 +55,10 @@ export const convertToInk = (story) => {
       return null
     }
     switch (condition) {
-      case '=': case '!=': case '<': case '<=': case '>': case '>=': {
+      case '=': {
+        return `${inkVar} == ${value}`
+      }
+      case '!=': case '<': case '<=': case '>': case '>=': {
         return `${inkVar} ${condition} ${value}`
       }
       default: console.warn('This type of counter condition is unknown:', condition)
