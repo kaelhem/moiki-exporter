@@ -1,20 +1,21 @@
-const CURRENT_SCHEMA_VERSION = 2
+const CURRENT_SCHEMA_VERSION = 3
 
 export const migrate = (story) => {
   const storyVersion = story.meta.version || 1
   story.meta.version = CURRENT_SCHEMA_VERSION
   switch (storyVersion) {
     case 1: return fromV1(story)
-    default: return fromV2(story)
+    case 2: return fromV2(story)
+    default: return fromV3(story)
   }
 }
 
 const fromCommon = (story) => {
-  const {_id, meta, firstSequence, sequences, theme, assets=[], sounds=[], counters=[], stats={numView: 0}} = story
+  const {_id, meta, firstSequence, sequences, themes=[], assets=[], sounds=[], counters=[], images=[], socialClub=null} = story
   return {
     _id,
     meta,
-    theme,
+    themes,
     firstSequence: firstSequence || (sequences && sequences.length > 0 ? sequences[0].id : 'intro'),
     sequences: sequences && sequences.length > 0 ? sequences : [{
       id: 'intro',
@@ -23,12 +24,22 @@ const fromCommon = (story) => {
     counters,
     assets,
     sounds,
-    stats
+    images
   }
 }
 
-const fromV2 = (story) => {
+const fromV3 = (story) => {
   return fromCommon(story)
+}
+
+const fromV2 = (story) => {
+  const converted = fromCommon(story)
+  return {
+    ...converted,
+    themes: [
+      { ...story.theme, identifier: 'default', idName: 'default'}
+    ]
+  }
 }
 
 const fromV1 = (story) => {
@@ -39,6 +50,9 @@ const fromV1 = (story) => {
       ...converted.meta,
       simplified: true
     },
+    themes: [
+      { ...story.theme, identifier: 'default', idName: 'default'}
+    ],
     sequences: converted.sequences.map((s) => {
       const {_doc} = s
       const {action, condition, ...seq} = (_doc || s)
