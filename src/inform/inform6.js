@@ -1,8 +1,5 @@
 /**
 This export will not use any extra library, just Inform (that means, there is no parser).
-
-TODO: 
-* add undo feature
 */
 
 import kebabCase from 'lodash.kebabcase'
@@ -10,7 +7,7 @@ import { getHeader, getAuthor } from '../utils'
 import * as informUtils from './inform6-utils'
 
 export const convertToInform6 = (story, opts={}) => {
-  const { _id, meta, firstSequence, sequences, assets, counters } = story
+  const { _id, meta, firstSequence, sequences, assets={}, counters={}, textvars={} } = story
   const { convertId: idConverter, cleanContent: contentCleaner, SPECIAL_CHARS } = informUtils
   const settings = {...informUtils.informDefaultSettings, ...opts}
   const STRINGS = {...(settings.lang === 'fr' ? informUtils.DEFAULT_STRINGS_FR : informUtils.DEFAULT_STRINGS_EN), ...(settings.strings || {})}
@@ -97,6 +94,16 @@ export const convertToInform6 = (story, opts={}) => {
   }
   const counterVarsAsArray = Object.entries(counterVariables).map(([_, data]) => data)
 
+  const textvarVariables = {}
+  for (const [idx, textvar] of textvars.entries()) {
+    textvarVariables[textvar.id] = {
+      identifier: '_' + convertId(kebabCase(textvar.name), '') + '_' + (idx + 1),
+      value: textvar.defaultValue || 0,
+      ...textvar
+    }
+  }
+  const textvarVarsAsArray = Object.entries(textvarVariables).map(([_, data]) => data)
+
   const extractPassageFromConditions = (conditions) => {
     const passages = []
     if (conditions && conditions.length > 0) {
@@ -160,6 +167,27 @@ export const convertToInform6 = (story, opts={}) => {
     return null
   }
 
+
+  const getTextvarValueIndex = (target, value) => {
+    const foundTextvar = textvarVariables[target]
+    if (foundTextvar && foundTextvar.values) {
+      const foundValue = foundTextvar.values.findIndex(x => x.id === value)
+      if (foundValue) {
+        return foundValue + 1
+      }
+    }
+    return 1
+  }
+
+  const convertTextvarCondition = (condition, target, value) => {
+    switch (condition) {
+      case '=': return `${textvarVariables[target].identifier}_VAL == ${getTextvarValueIndex(target, value)}`
+      case '!=': return `${textvarVariables[target].identifier}_VAL ~= ${getTextvarValueIndex(target, value)}`
+      default: console.warn('This type of textvar condition is unknown:', condition)
+    }
+    return null
+  }
+
   const convertPassageCondition = (condition, target) => {
     switch (condition) {
       case 'by': return `userPassages-->PSG_${convertId(target)} == 1`
@@ -176,6 +204,7 @@ export const convertToInform6 = (story, opts={}) => {
       switch (kind) {
         case 'object': res.push(convertObjectCondition(condition, target)); break
         case 'counter': res.push(convertCounterCondition(condition, target, value)); break
+        case 'textvar': res.push(convertTextvarCondition(condition, target, value)); break
         case 'passage': res.push(convertPassageCondition(condition, target)); break
         default: {
           console.warn('This type of multiple condition is unknown:', kind)
@@ -191,6 +220,7 @@ export const convertToInform6 = (story, opts={}) => {
     switch (kind) {
       case 'object': return convertObjectCondition(condition, target)
       case 'counter': return convertCounterCondition(condition, target, value)
+      case 'textvar': return convertTextvarCondition(condition, target, value)
       case 'passage': return convertPassageCondition(condition, target)
       case 'multiple': {
         const multiCond = convertMultipleCondition(params)
@@ -217,6 +247,11 @@ export const convertToInform6 = (story, opts={}) => {
         case 'counter': {
           const counterCond = convertCounterCondition(condition, target, value)
           counterCond && listConditions.push(`if (${counterCond}) return ${convertId(next)};`)
+          break
+        }
+        case 'textvar': {
+          const textvarCond = convertTextvarCondition(condition, target, value)
+          textvarCond && listConditions.push(`if (${textvarCond}) return ${convertId(next)};`)
           break
         }
         case 'passage': {
@@ -247,6 +282,8 @@ export const convertToInform6 = (story, opts={}) => {
         case 'object': listActions.push(`${modifier}Item(${objectVariables[target].identifier});`); break
         // modifier = set, add, sub
         case 'counter': listActions.push(`${modifier}Counter(${counterVariables[target].identifier}, ${value});`); break
+        // modifier = set
+        case 'textvar': listActions.push(`${textvarVariables[target].identifier}_VAL = ${getTextvarValueIndex(target, value)};`); break
         default: {
           console.warn('This kind of action is unknown:', kind)
         }
@@ -273,10 +310,56 @@ export const convertToInform6 = (story, opts={}) => {
     }
   }
 
+  const convertContentVars = (s) => {
+    const regex = /<data class=~ql-moikivar~([^<]+)<\/data>/gim
+    const regexId = /data-var-id=~([A-Za-z0-9-]+)~ data-var-op=~([a-z]+)~/
+    const replacers = []
+  
+    let matches
+    while ((matches = regex.exec(s)) !== null) {
+      const foundId = matches[0].match(regexId)
+      if (foundId && foundId.length > 1) {
+        const counter = counterVariables[foundId[1]] //allCounters.find(x => x.id === foundId[1]) || story.counters[foundId[1]]
+        const textvar = textvarVariables[foundId[1]] //allTextvars.find(x => x.id === foundId[1]) || story.textvars[foundId[1]]
+        const op = foundId[2] || 'value'
+        let value = ''
+        if (counter) {
+          switch (op) {
+            case 'percent': {
+              value = `", ${counter.identifier}, "`
+              // TODO : that does not work... (not strange at all)
+              // value = `";\n  print ((${counter.identifier} - getCounterMin(${counter.identifier})) / (getCounterMax(${counter.identifier}) - getCounterMin(${counter.identifier}))) * 100;\n  print "%`
+              break
+            }
+            default: {
+              value = `", ${counter.identifier}, "`
+            }
+          }
+        } else if (textvar) {
+          switch (op) {
+            case 'random': {
+              value = `";\n  getTextvarValue(${textvar.identifier}, random(${textvar.identifier}_NUMVALUES));\n  print "`
+              break
+            }
+            default: {
+              value = `";\n  getTextvarValue(${textvar.identifier}, ${textvar.identifier}_VAL);\n  print "`
+            }
+          }
+        }
+        replacers.push({from: matches[0], to: value})
+      }
+    }
+    let converted = s
+    for (let i=0; i<replacers.length; ++i) {
+      converted = converted.replace(replacers[i].from, replacers[i].to)
+    }
+    return converted
+  }
+
   const getNodeDescription = (sequence) => {
     let statements = null
     const listVars = []
-    const text = cleanContent(sequence.content)
+    const text = convertContentVars(cleanContent(sequence.content))
     if (sequence.puzzle) {
       listVars.push('code')
       // puzzle sequence 
@@ -326,7 +409,7 @@ export const convertToInform6 = (story, opts={}) => {
       if (hasShowConditions) {
         listVars.push('choice', 'numVisibleChoices')
         for (let choice of sequence.choices) {
-          const choiceContent = cleanContent(choice.content)
+          const choiceContent = convertContentVars(cleanContent(choice.content))
           const showCond = choice.showCondition && choice.showCondition.kind ? convertShowCondition(choice.showCondition) : false
           if (showCond) {
             choicesDescription.push(
@@ -525,6 +608,17 @@ Array userCounters --> (ARRAY_LEN_OFFSET + COUNT_TOTAL_COUNTERS);
 ];
 `) : ''}
 
+${ textvarVarsAsArray.length > 0 ? (
+`! Textvars management
+! -------------------------------------------
+
+[ clearTextvars;
+  ${ true && textvarVarsAsArray.map(v => v.identifier + '_VAL = 1;').join('\n')}
+  return;
+];
+
+`) : ''}
+
 ${ passageVarsAsArray.length > 0 ? (
 `! Passages management (for conditions only)
 ! -------------------------------------------
@@ -593,7 +687,7 @@ Array userPassages --> (ARRAY_LEN_OFFSET + COUNT_TOTAL_PASSAGES);
 Array key -> 13;
 
 ! read user code
-[ getInputCode numChoices len chNum commandUnknown done;
+[ getInputCode;
   do {
     print "> ";
   } until(KeyLine(key)-->0);
@@ -777,6 +871,7 @@ ${ objectVarsAsArray.length > 0 ? (`
     status_field_2 = 0; ! reset turns
     ${ objectVarsAsArray.length > 0 ? `clearItems();` : '' }
     ${ counterVarsAsArray.length > 0 ? `clearCounters();` : '' }
+    ${ textvarVarsAsArray.length > 0 ? `clearTextvars();` : '' }
     ${ passageVarsAsArray.length > 0 ? `clearPassages();` : '' }
     mainLoop(firstSequence);
     if (markForRedo == 1) {
@@ -799,9 +894,9 @@ ${ objectVarsAsArray.length > 0 ? (`
 ! ${getHeader(_id).split('\n').join('\n! ')}
 
 ! author: ${getAuthor(meta)}
-! title: ${meta.name}
+! title: ${cleanContent(meta.name)}
 
-Object DefaultRoomForStatusBar "${meta.name}"; ! used to force name in status line
+Object DefaultRoomForStatusBar "${cleanContent(meta.name)}"; ! used to force name in status line
 
 ! Constants
 ! -------------------------------------------
@@ -847,6 +942,20 @@ ${true && counterVarsAsArray.map((v, i) => 'Constant ' + v.identifier + ' = ' + 
   }
 ];
 
+[ getCounterMin index;
+  switch (index) {
+    ${true && counterVarsAsArray.map(v => v.identifier + ': return ' + v.min + ';').join('\n    ')}
+    default: return 0;
+  }
+];
+
+[ getCounterMax index;
+  switch (index) {
+    ${true && counterVarsAsArray.map(v => v.identifier + ': return ' + v.max + ';').join('\n    ')}
+    default: return 1;
+  }
+];
+
 [ defaultCounterValue index;
   switch (index) {
     ${true && counterVarsAsArray.map(v => v.identifier + ': return ' + (v.defaultValue || 0) + ';').join('\n    ')}
@@ -858,6 +967,31 @@ ${true && counterVarsAsArray.map((v, i) => 'Constant ' + v.identifier + ' = ' + 
   switch (index) {
     ${true && counterVarsAsArray.filter(v => v.gauge).map(v => v.identifier + ': rtrue;').join('\n    ')}
     default: return false;
+  }
+];
+
+`) : ''}
+
+${ textvarVarsAsArray.length > 0 ? (`
+! Defines textvars
+!-------------------------------------------
+Constant COUNT_TOTAL_TEXTVARS = ${textvarVarsAsArray.length};
+
+${true && textvarVarsAsArray.map((v, i) => 
+  'Constant ' + v.identifier + ' = ' + (i + 1) + ';\n' +
+  'Constant ' + v.identifier + '_NUMVALUES = ' + v.values.length + ';\n' + 
+  'Global ' + v.identifier + '_VAL = 1;')
+  .join('\n')
+}
+
+[ getTextvarValue index1 index2;
+  switch (index1) {
+    ${true && textvarVarsAsArray.map((v, i) => (
+      `${v.identifier}:
+      switch (index2) {${v.values.map((val, id) => `\n        ${(id + 1)}: print "${informUtils.escapeText(val.text)}";`).join('')}
+        default: print "${informUtils.escapeText(v.name)}";
+      }`
+    ))}
   }
 ];
 

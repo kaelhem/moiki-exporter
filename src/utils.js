@@ -35,9 +35,9 @@ export const getAuthor = (story) => {
       + object that corresponding to won objects
       ex.: ['text of several sequences', {sequenceAction}, 'text of following sequences']
 
-  /!\ this method is destructive for the sequences object pass in. You should use a deep copy to keep you data untouched.
+  /!\ this method is destructive for the sequences object pass in. You should use a deep copy to keep your data untouched.
 */
-export const simplifyStory = ({sequences, firstSequence, assets}, vars, cleanTextFn) => {
+export const simplifyStory = ({sequences, firstSequence}, vars, cleanTextFn) => {
   const tree = {}
 
   const addLink = (id, to, isBackLink=false) => {

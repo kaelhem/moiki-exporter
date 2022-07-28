@@ -11,7 +11,7 @@ export const migrate = (story) => {
 }
 
 const fromCommon = (story) => {
-  const {_id, meta, firstSequence, sequences, themes=[], assets=[], sounds=[], counters=[], images=[], socialClub=null} = story
+  const {_id, meta, firstSequence, sequences, themes=[], assets=[], sounds=[], counters=[], textvars=[], images=[], socialClub=null} = story
   return {
     _id,
     meta,
@@ -22,6 +22,7 @@ const fromCommon = (story) => {
       content: ''
     }],
     counters,
+    textvars,
     assets,
     sounds,
     images

@@ -13,14 +13,16 @@ const cleanContent = content => {
     .replace(/(<([/]*)(span)>)/gi, '')
     .replace(/<span class="ql-cursor">/gi, '')
     .replace(/&nbsp;/gi, ' ')
+    .replace(/\u200C/gi, '')
     .replace(/(\s)+/gi, ' ')
+    .replace(/@@_xx_LF_@@/gi, '\n') //@@_xx_LF_@@
     .trim()
 }
 
 const INDENT = '  '
 
 export const convertToInk = (story) => {
-  const { _id, meta, firstSequence, sequences, assets, counters } = story
+  const { _id, meta, firstSequence, sequences, assets=[], counters=[], textvars=[] } = story
 
   let objectVariables = {}
   for (let asset of assets) {
@@ -36,6 +38,58 @@ export const convertToInk = (story) => {
       inkVar: '_counter_' + convertId(kebabCase(counter.name)),
       ...counter
     }
+  }
+
+  let textvarVariables = {}
+  for (let textvar of textvars) {
+    textvarVariables[textvar.id] = {
+      inkVar: '_textvar_' + convertId(kebabCase(textvar.name)),
+      ...textvar
+    }
+  }
+
+  const convertContentVars = (s) => {
+    const regex = /<span class="ql-moikivar"([^<]+)<\/span>/gim
+    const regexId = /data-var-id="([A-Za-z0-9-]+)" data-var-op="([a-z]+)"/
+    const replacers = []
+  
+    let matches
+    while ((matches = regex.exec(s)) !== null) {
+      const foundId = matches[0].match(regexId)
+      if (foundId && foundId.length > 1) {
+        const counter = counterVariables[foundId[1]] //allCounters.find(x => x.id === foundId[1]) || story.counters[foundId[1]]
+        const textvar = textvarVariables[foundId[1]] //allTextvars.find(x => x.id === foundId[1]) || story.textvars[foundId[1]]
+        const op = foundId[2] || 'value'
+        let value = ''
+        if (counter) {
+          switch (op) {
+            case 'percent': {
+              value = `{INT((FLOAT(${counter.inkVar} - ${counter.inkVar}_min) / FLOAT(${counter.inkVar}_max - ${counter.inkVar}_min)) * 100)}%`
+              break
+            }
+            default: {
+              value = `{${counter.inkVar}}`
+            }
+          }
+        } else if (textvar) {
+          switch (op) {
+            case 'random': {
+              value = `<>@@_xx_LF_@@~${textvar.inkVar}_func(RANDOM(0, ${textvar.values.length-1}))@@_xx_LF_@@<>`
+              break
+            }
+            default: {
+              value = `{${textvar.inkVar}}`
+            }
+          }
+        }
+        replacers.push({from: matches[0], to: value})
+      }
+    }
+    let converted = s
+    for (let i=0; i<replacers.length; ++i) {
+      converted = converted.replace(replacers[i].from, replacers[i].to)
+    }
+    return converted
   }
 
   const convertObjectCondition = (condition, target) => {
@@ -66,6 +120,21 @@ export const convertToInk = (story) => {
     return null
   }
 
+  const convertTextvarCondition = (condition, target, value) => {
+    const {inkVar, values, name} = textvarVariables[target]
+    const {text} = values.find(x => x.id === value) || {text: name}
+    switch (condition) {
+      case '=': {
+        return `${inkVar} == "${text.replace(/\"/g, '\\\"')}"`
+      }
+      case '!=': {
+        return `${inkVar} ${condition} "${text.replace(/\"/g, '\\\"')}"`
+      }
+      default: console.warn('This type of textvar condition is unknown:', condition)
+    }
+    return null
+  }
+
   const convertPassageCondition = (condition, target) => {
     switch (condition) {
       case 'by': return `${convertId(target)}`
@@ -89,6 +158,7 @@ export const convertToInk = (story) => {
     switch (kind) {
       case 'object': return convertObjectCondition(condition, target)
       case 'counter': return convertCounterCondition(condition, target, value)
+      case 'textvar': return convertTextvarCondition(condition, target, value)
       case 'passage': return convertPassageCondition(condition, target)
       case 'multiple': {
         const multiCond = convertMultipleCondition(params)
@@ -180,10 +250,23 @@ export const convertToInk = (story) => {
     return null
   }
 
+  const convertTextvarAction = ({target, modifier, value}) => {
+    const {inkVar, values, name} = textvarVariables[target]
+    const { text } = values.find(x => x.id === value) || {text: name}
+    switch (modifier) {
+      case 'set': {
+        return [`~ ${inkVar} = "${text.replace(/\"/g, '\\\"')}"`]
+      }
+      default: console.warn('This action modifier is unknown:', modifier)
+    }
+    return null
+  }
+
   const convertAction = ({kind, params}) => {
     switch (kind) {
       case 'object': return convertObjectAction(params)
       case 'counter': return convertCounterAction(params)
+      case 'textvar' : return convertTextvarAction(params)
       default: {
         console.warn('This kind of action is unknown:', kind)
       }
@@ -221,14 +304,22 @@ ${getHeader(_id)}
     result += 'VAR ' + inkVar + ' = false\n'
   }
   const counterVarsAsArray = Object.entries(counterVariables).map(([_, data]) => data)
-  for (let {inkVar, defaultValue=0} of counterVarsAsArray) {
+  for (let {inkVar, defaultValue=0, min, max} of counterVarsAsArray) {
     result += `VAR ${inkVar} = ${defaultValue}\n`
+    result += `VAR ${inkVar}_min = ${min}\n`
+    result += `VAR ${inkVar}_max = ${max}\n`
+  }
+
+  const textvarVarsAsArray = Object.entries(textvarVariables).map(([_, data]) => data)
+  for (let {inkVar, name,  values=[]} of textvarVarsAsArray) {
+    const v = ((values && values.length) > 0 ? values[0].text : name).replace(/\"/g, '\\\"')
+    result += `VAR ${inkVar} = "${v}"\n`
   }
 
   result += '\n-> ' + convertId(firstSequence) + '\n'
 
   for (let sequence of sequences) {
-    const text = cleanContent(sequence.content)
+    const text = cleanContent(convertContentVars(sequence.content))
     result += '\n=== ' + convertId(sequence.id) + ' ===\n'
     result += text + '\n'
     if (sequence.puzzle) {
@@ -244,7 +335,7 @@ ${getHeader(_id)}
           const {kind, query: {params, operator=null}} = choice.showCondition
           prefix += '{' + convertCondition(kind, params, operator) + '} '
         }
-        let choiceContent = prefix + '[' + cleanContent(choice.content) + ']' + actions
+        let choiceContent = prefix + '[' + cleanContent(convertContentVars(choice.content)) + ']\n' + actions
         if (choice.conditions && choice.conditions.length > 0) {
           result += `${choiceContent} ${addConditions(choice.conditions, choice.next, true)}`
         } else {
@@ -265,5 +356,17 @@ ${getHeader(_id)}
       }
     }
   }
+
+  // writing functions to access textvars as list
+  for (let {inkVar, values=[]} of textvarVarsAsArray) {
+    let varValues = ''
+    let idx = 0
+    for (let val of values) {
+      varValues += `\n\t- ${idx}: ${val.text}`
+      ++idx
+    }
+    result += `\n\n=== function ${inkVar}_func(val)\n{ val:${varValues}\n}`
+  }
+
   return result
 }

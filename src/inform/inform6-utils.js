@@ -8,6 +8,8 @@ export const convertId = (id, prefix = 'story') => {
 
 export const cleanContent = (content) => {
   return content
+    .replace(/<span class="ql-moikivar"([^<]+)<\/span>/gim, '<data class="ql-moikivar"$1<\/data>')
+    .replace(/\u200C/gim, '')
     .replace(/(<\/*(strong|b)>)/gi, '')
     .replace(/(<\/*(em)>)/gi, '')
     .replace(/(<\/*(h\d)>)/gi, '')
@@ -28,6 +30,12 @@ export const cleanContent = (content) => {
     .replace(/’/gim, '\'')
     .replace(/…/gim, '...')
     .trim()
+}
+
+export const escapeText = (s) => {
+  return s
+    .replace(/~/gim, '@@126')
+    .replace(/("|“|”)/gim, '~')
 }
 
 export const informDefaultSettings = {
