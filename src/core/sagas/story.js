@@ -21,7 +21,6 @@ import windows1252 from 'windows-1252'
 
 const generatePngIcons = async (storyData) => {
   const parser = new DOMParser()
-  console.log(storyData.assets)
   for (let asset of storyData.assets) {
     try {
       const svgString = decodeURIComponent(asset.icon.replace(/data:image\/svg\+xml,/g, ''))
