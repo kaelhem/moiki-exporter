@@ -35,13 +35,21 @@ const ExportMenu = (props) => {
             <h2>{story.meta.name}</h2>
             <div><em>A story by {utils.getAuthor(story.meta)}</em></div>
           </Segment>
-          <Button as={Link} to='/create-inform'>Export to Inform6</Button>
-          <Button as={Link} to='/create-ink'>Export to Inkle's ink</Button>
-          {/*
-          <Button as={Link} to='/create-twine'>Export to Twee</Button>
-          <Button as={Link} to='/create-jdrbot'>Export to JDR-Bot</Button>
-          */}
-          <Button disabled={!story.meta.simplified} as={Link} to='/create-pdf'>Make PDF... {!story.meta.simplified && <Fragment><br/>(for simplified stories only...)</Fragment>}</Button>
+          { story.meta.expert ? (
+            <div style={{ fontStyle: 'italic', maxWidth: 330 }}>
+              Stories made with <b>expert mode</b> are not yet managed by Moiki-Exporter!
+            </div>
+          ) : (
+            <Fragment>
+              <Button as={Link} to='/create-inform'>Export to Inform6</Button>
+              <Button as={Link} to='/create-ink'>Export to Inkle's ink</Button>
+              {/*
+              <Button as={Link} to='/create-twine'>Export to Twee</Button>
+              <Button as={Link} to='/create-jdrbot'>Export to JDR-Bot</Button>
+              */}
+              <Button disabled={!story.meta.simplified} as={Link} to='/create-pdf'>Make PDF... {!story.meta.simplified && <Fragment><br/>(for simplified stories only...)</Fragment>}</Button>
+            </Fragment>
+          )}
           <Divider />
           <Button onClick={clear}>Import another story</Button>
         </div>
