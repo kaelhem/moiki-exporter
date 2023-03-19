@@ -151,16 +151,21 @@ export const convertToInform6 = (story, opts={}) => {
     return null
   }
 
-  const convertCounterCondition = (condition, target, value) => {
-    if (isNaN(value) || typeof value !== 'number') {
-      console.warn('The value of this counter condition is invalid:', value)
-      return null
+  const convertCounterCondition = (condition, target, value, valueType) => {
+    let condValue = value
+    if (valueType === 'counter') {
+      condValue = counterVariables[value].identifier
+    } else {
+      if (isNaN(value) || typeof value !== 'number') {
+        console.warn('The value of this counter condition is invalid:', value)
+        return null
+      }
     }
     switch (condition) {
-      case '=': return `${counterVariables[target].identifier} == ${value}`
-      case '!=': return `${counterVariables[target].identifier} ~= ${value}`
+      case '=': return `${counterVariables[target].identifier} == ${condValue}`
+      case '!=': return `${counterVariables[target].identifier} ~= ${condValue}`
       case '<': case '<=': case '>': case '>=': {
-        return `${counterVariables[target].identifier} ${condition} ${value}`
+        return `${counterVariables[target].identifier} ${condition} ${condValue}`
       }
       default: console.warn('This type of counter condition is unknown:', condition)
     }
@@ -200,10 +205,10 @@ export const convertToInform6 = (story, opts={}) => {
   const convertMultipleCondition = (allConditions) => {
     const res = []
     for (let c of allConditions) {
-      const {kind, condition, target, value} = c
+      const {kind, condition, target, value, valueType} = c
       switch (kind) {
         case 'object': res.push(convertObjectCondition(condition, target)); break
-        case 'counter': res.push(convertCounterCondition(condition, target, value)); break
+        case 'counter': res.push(convertCounterCondition(condition, target, value, valueType)); break
         case 'textvar': res.push(convertTextvarCondition(condition, target, value)); break
         case 'passage': res.push(convertPassageCondition(condition, target)); break
         default: {
@@ -216,10 +221,10 @@ export const convertToInform6 = (story, opts={}) => {
 
   const convertShowCondition = (showCondition) => {
     const {kind, query: {operator, params}} = showCondition
-    const [{target, condition, value}] = params
+    const [{target, condition, value, valueType}] = params
     switch (kind) {
       case 'object': return convertObjectCondition(condition, target)
-      case 'counter': return convertCounterCondition(condition, target, value)
+      case 'counter': return convertCounterCondition(condition, target, value, valueType)
       case 'textvar': return convertTextvarCondition(condition, target, value)
       case 'passage': return convertPassageCondition(condition, target)
       case 'multiple': {
@@ -237,7 +242,7 @@ export const convertToInform6 = (story, opts={}) => {
     const listConditions = []
     for (let c of conditions) {
       const {kind, next, query: {operator, params}} = c
-      const [{target, condition, value}] = params
+      const [{target, condition, value, valueType}] = params
       switch (kind) {
         case 'object': {
           const objCondition = convertObjectCondition(condition, target)
@@ -245,7 +250,7 @@ export const convertToInform6 = (story, opts={}) => {
           break
         }
         case 'counter': {
-          const counterCond = convertCounterCondition(condition, target, value)
+          const counterCond = convertCounterCondition(condition, target, value, valueType)
           counterCond && listConditions.push(`if (${counterCond}) return ${convertId(next)};`)
           break
         }
@@ -276,12 +281,19 @@ export const convertToInform6 = (story, opts={}) => {
   const convertActions = (actions) => {
     const listActions = []
     for (let act of actions) {
-      const {kind, params: {target, modifier, value}} = act
+      const {kind, params: {target, modifier, value, valueType}} = act
       switch (kind) {
         // modifier = toggle, add, sub
         case 'object': listActions.push(`${modifier}Item(${objectVariables[target].identifier});`); break
         // modifier = set, add, sub
-        case 'counter': listActions.push(`${modifier}Counter(${counterVariables[target].identifier}, ${value});`); break
+        case 'counter': {
+          if (valueType === 'counter') {
+            listActions.push(`${modifier}Counter(${counterVariables[target].identifier}, userCounters-->${counterVariables[value].identifier});`);
+          } else {
+            listActions.push(`${modifier}Counter(${counterVariables[target].identifier}, ${value});`);
+          }
+          break
+        }
         // modifier = set
         case 'textvar': listActions.push(`${textvarVariables[target].identifier}_VAL = ${getTextvarValueIndex(target, value)};`); break
         default: {

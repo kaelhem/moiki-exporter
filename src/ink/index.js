@@ -102,18 +102,23 @@ export const convertToInk = (story) => {
     return null
   }
 
-  const convertCounterCondition = (condition, target, value) => {
+  const convertCounterCondition = (condition, target, value, valueType) => {
     const {inkVar} = counterVariables[target]
-    if (isNaN(value) || typeof value !== 'number') {
-      console.warn('The value of this counter condition is invalid:', value)
-      return null
+    let condValue = value
+    if (valueType === 'counter') {
+      condValue = counterVariables[value].inkVar
+    } else {
+      if (isNaN(value) || typeof value !== 'number') {
+        console.warn('The value of this counter condition is invalid:', value)
+        return null
+      }
     }
     switch (condition) {
       case '=': {
-        return `${inkVar} == ${value}`
+        return `${inkVar} == ${condValue}`
       }
       case '!=': case '<': case '<=': case '>': case '>=': {
-        return `${inkVar} ${condition} ${value}`
+        return `${inkVar} ${condition} ${condValue}`
       }
       default: console.warn('This type of counter condition is unknown:', condition)
     }
@@ -148,16 +153,16 @@ export const convertToInk = (story) => {
     const res = []
     for (let c of allConditions) {
       const {kind, condition, target, value} = c
-      res.push(convertCondition(kind, [{condition, target, value}]))
+      res.push(convertCondition(kind, [{condition, target, value, valueType}]))
     }
     return res.filter(x => x !== null)
   }
 
   const convertCondition = (kind, params, operator) => {
-    const [{condition, target, value}] = params
+    const [{condition, target, value, valueType}] = params
     switch (kind) {
       case 'object': return convertObjectCondition(condition, target)
-      case 'counter': return convertCounterCondition(condition, target, value)
+      case 'counter': return convertCounterCondition(condition, target, value, valueType)
       case 'textvar': return convertTextvarCondition(condition, target, value)
       case 'passage': return convertPassageCondition(condition, target)
       case 'multiple': {
@@ -221,28 +226,32 @@ export const convertToInk = (story) => {
     return null
   }
 
-  const convertCounterAction = ({target, modifier, value}) => {
+  const convertCounterAction = ({target, modifier, value, valueType}) => {
     const {inkVar, name, gauge} = counterVariables[target]
+    let condValue = value
+    if (valueType === 'counter') {
+      condValue = counterVariables[value].inkVar
+    }
     switch (modifier) {
       case 'set': {
-        const defaultAction = [`~ ${inkVar} = ${value}`]
+        const defaultAction = [`~ ${inkVar} = ${condValue}`]
         return gauge ? [
           ...defaultAction,
-          `<em>${name} vaut maintenant : ${value}</em>`
+          `<em>${name} vaut maintenant : {${condValue}}</em>`
         ] : defaultAction
       }
       case 'add': {
-        const defaultAction = [`~ ${inkVar} += ${value}`]
+        const defaultAction = [`~ ${inkVar} += ${condValue}`]
         return gauge ? [
           ...defaultAction,
-          `<em>${name} augmente de ${value} et vaut maintenant : {${inkVar}}</em>`
+          `<em>${name} augmente de {${condValue}} et vaut maintenant : {${inkVar}}</em>`
         ] : defaultAction
       }
       case 'sub': {
-        const defaultAction = [`~ ${inkVar} -= ${value}`]
+        const defaultAction = [`~ ${inkVar} -= ${condValue}`]
         return gauge ? [
           ...defaultAction,
-          `<em>${name} diminue de ${value} et vaut maintenant : {${inkVar}}</em>`
+          `<em>${name} diminue de {${condValue}} et vaut maintenant : {${inkVar}}</em>`
         ] : defaultAction
       }
       default: console.warn('This action modifier is unknown:', modifier)
